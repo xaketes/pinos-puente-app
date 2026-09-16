@@ -1,0 +1,137 @@
+{
+  "app_name": "Peña Futsal Manager",
+  "personality": "7 Dark-First Utility",
+  "personality_one_liner": "Command-center sports utility with high contrast metrics, instant tracking, and vibrant green-yellow team kits.",
+  "color": {
+    "surface": "#121614",
+    "onSurface": "#F4F7F5",
+    "surfaceSecondary": "#1A221E",
+    "onSurfaceSecondary": "#E0E8E3",
+    "surfaceTertiary": "#243029",
+    "onSurfaceTertiary": "#A3B8AD",
+    "surfaceInverse": "#F4F7F5",
+    "onSurfaceInverse": "#121614",
+    "brand": "#10B981",
+    "brandPrimary": "#10B981",
+    "onBrandPrimary": "#091C14",
+    "brandSecondary": "#F59E0B",
+    "onBrandSecondary": "#1A1508",
+    "brandTertiary": "#1A3326",
+    "onBrandTertiary": "#34D399",
+    "success": "#10B981",
+    "onSuccess": "#091C14",
+    "warning": "#F59E0B",
+    "onWarning": "#1A1508",
+    "error": "#EF4444",
+    "onError": "#FFF5F5",
+    "info": "#3B82F6",
+    "onInfo": "#EFF6FF",
+    "border": "#23332A",
+    "borderStrong": "#10B981",
+    "divider": "#1E2B23",
+    "muted": "#8FA396",
+    "onBrand": "#091C14"
+  },
+  "typography": {
+    "displayFontFamily": "Barlow Condensed",
+    "textFontFamily": "Satoshi",
+    "scale": {
+      "sm": 12,
+      "base": 14,
+      "lg": 16,
+      "xl": 20,
+      "2xl": 24
+    }
+  },
+  "spacing": {
+    "rule": "Clean operational rhythm with comfortable 56pt touch targets and compact metric gaps",
+    "xs": 4,
+    "sm": 8,
+    "md": 12,
+    "lg": 16,
+    "xl": 24,
+    "2xl": 32,
+    "3xl": 48
+  },
+  "radius_tokens": {
+    "sm": 6,
+    "md": 12,
+    "lg": 20,
+    "pill": 999
+  },
+  "shadow_tier": 0,
+  "navigation": "bottom_tabs",
+  "icon_set": "MaterialCommunityIcons",
+  "glassmorphism": {
+    "enabled": false,
+    "do's": [
+      "Keep high clarity and contrast for live game tracking",
+      "Use solid dark tactical surfaces for high-intensity readability"
+    ],
+    "dont's": [
+      "Avoid heavy blurs that impair rapid stat scanning"
+    ]
+  },
+  "platform_libraries": {
+    "glass": {
+      "ios": "expo-glass-effect",
+      "android": "expo-blur",
+      "low_end_android_fallback": "solid surfaceSecondary"
+    },
+    "image": "expo-image",
+    "blur": "expo-blur",
+    "bottom_sheet": "@gorhom/bottom-sheet",
+    "animation": "react-native-reanimated",
+    "gesture": "react-native-gesture-handler"
+  },
+  "screens": [
+    {
+      "name": "Convocatoria",
+      "purpose": "Configure upcoming match details and track player RSVP attendance (Voy/No voy).",
+      "states": {
+        "loading": "Centered sports spinner with pitch branding",
+        "empty": "Empty state prompting squad setup in Administration",
+        "error": "Alert banner with retry action for local storage sync"
+      },
+      "layout": "Match configuration card at top with date, time, and venue picker. Live attendance counter badge. Scrollable roster list with green 'Voy' and red 'No voy' toggle buttons for each player."
+    },
+    {
+      "name": "Partido de la Semana",
+      "purpose": "Manage live team allocation (Equipo Verde vs Equipo Amarillo), scoreboard, MVP selection, and match stats.",
+      "states": {
+        "loading": "Loading team rosters and live score state",
+        "empty": "Prompt to confirm attendance in Convocatoria before assigning teams",
+        "error": "Notification of save conflict with manual override button"
+      },
+      "layout": "Team assignment split cards for Verde and Amarillo. Real-time scoreboard with increment buttons. Player stat logger for goals and assists. Finalize match button with MVP dropdown selector."
+    },
+    {
+      "name": "Clasificación Individual",
+      "purpose": "Display standings ordered by victory points with full individual statistics.",
+      "states": {
+        "loading": "Loading standings table",
+        "empty": "No completed matches recorded yet. Finish a match to populate rankings.",
+        "error": "Error reading local storage standings cache"
+      },
+      "layout": "Sticky header ranking table with columns for Posición, Nombre, Puntos, PJ, Goles, Asistencias, and MVP Trophies. Top 3 highlighted with special rank badges."
+    },
+    {
+      "name": "Administración",
+      "purpose": "Add new players to the roster and manage season resets.",
+      "states": {
+        "loading": "Loading player roster database",
+        "empty": "No players added yet. Use the form below to add your first player.",
+        "error": "Validation error for player data entry"
+      },
+      "layout": "Quick player registration form with inputs for Name, Jersey Number (Dorsal), and Futsal Position (Portero, Cierre, Ala, Pívot). Active player roster management list with delete/edit actions. Season reset action card at the bottom."
+    }
+  ],
+  "images": {
+    "futsal_pitch_hero": {
+      "url": "https://images.unsplash.com/photo-1763775468707-573c7cd6b0da",
+      "dark": "https://images.unsplash.com/photo-1763775468707-573c7cd6b0da",
+      "alt": "Indoor futsal court with ball and pitch markings"
+    }
+  },
+  "instructions_to_main_agent": "Ensure absolute adherence to dark-first utility styling. Use local storage for all data persistence. Implement green and yellow team kits for match allocation. Support RSVP convocation, team balancing, scoreboard, MVP selection, individual standings, player administration, and season resets preserving roster definitions."
+}
