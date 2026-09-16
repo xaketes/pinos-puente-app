@@ -71,7 +71,6 @@ Una peña de fútbol sala necesita gestionar convocatorias, repartir equipos, re
 
 - Compartir convocatoria mediante enlace o mensaje.
 - Resumen anual con evolución de puntos y premios.
-- Sincronización opcional entre dispositivos con cuentas.
 - Identidad individual verificable para cada jugador, reemplazando la selección anónima por dispositivo.
 
 ## Siguientes tareas

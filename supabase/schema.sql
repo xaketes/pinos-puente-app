@@ -32,13 +32,26 @@ create table if not exists public.match_player_stats (
 
 -- Anonymous users choose their roster identity on the device; user_id still limits writes to that session.
 create table if not exists public.attendance (
+  id uuid not null default gen_random_uuid(),
   match_id uuid not null references public.matches(id) on delete cascade,
   player_id uuid not null references public.players(id) on delete cascade,
   user_id uuid not null references auth.users(id) on delete cascade,
   attending boolean not null,
   updated_at timestamptz not null default now(),
-  primary key (match_id, player_id)
+  primary key (id),
+  unique (match_id, player_id, user_id)
 );
+
+-- Safe migration for an earlier draft that used (match_id, player_id) as the key.
+alter table public.attendance add column if not exists id uuid default gen_random_uuid();
+update public.attendance set id = gen_random_uuid() where id is null;
+alter table public.attendance alter column id set not null;
+do $$ begin
+  if exists (select 1 from pg_constraint where conname = 'attendance_pkey' and conrelid = 'public.attendance'::regclass) then
+    alter table public.attendance drop constraint attendance_pkey;
+    alter table public.attendance add primary key (id);
+  end if;
+exception when undefined_table then null; end $$;
 
 create or replace function public.is_admin()
 returns boolean language sql stable security invoker

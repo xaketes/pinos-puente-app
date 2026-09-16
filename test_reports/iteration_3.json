@@ -1,0 +1,42 @@
+{
+  "summary": "Preview Expo móvil carga sin crashear con Supabase sin configurar; el aviso cloud pendiente aparece y los controles administrativos no se muestran. Las pestañas Admin y Partido navegan correctamente.",
+  "backend_issues": {
+    "critical": [
+      {
+        "endpoint": "supabase.attendance",
+        "issue": "La clave primaria es (match_id, player_id), pero las operaciones upsert/delete incluyen user_id. Dos usuarios anónimos no pueden registrar su asistencia independientemente para el mismo jugador/partido y la identidad por sesión queda rota.",
+        "priority": "HIGH"
+      }
+    ],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {
+        "flow": "Historial de partidos cloud",
+        "issue": "El snapshot solo transforma fecha, pabellón, marcador y MVP; MatchHistory/UI no exponen participantes, goles ni asistencias aunque son requisitos del historial.",
+        "affected_testIDs": ["standings-screen"]
+      }
+    ],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "test_report_links": ["/app/test_reports/iteration_3.json"],
+  "action_items": [
+    "Cambiar la PK de attendance a (match_id, player_id, user_id) o definir explícitamente una identidad única por jugador y ajustar RLS/upsert.",
+    "Completar el modelo y UI del historial con participantes, goles y asistencias del partido."
+  ],
+  "critical_code_review_comments": [
+    "La pantalla pending-cloud no genera datos simulados y usa estado vacío correctamente.",
+    "No se encontraron claves service_role/sb_secret ni credenciales hardcodeadas; AsyncStorage solo se configura como storage de sesión Supabase.",
+    "La prueba de ausencia de errores JS no fue concluyente por un selector evaluate mal escapado del script de prueba; no se observó red screen ni error visual."
+  ],
+  "updated_files": ["/app/test_reports/iteration_3.json"],
+  "success_rate": {"backend": "0% ejecutado (sin proyecto/credenciales Supabase)", "frontend": "90%"},
+  "seed_data_creation": "No se creó seed cloud ni local.",
+  "retest_needed": true,
+  "should_call_test_agent_after_fix": true,
+  "context_for_next_testing_agent": "Preview https://torneo-verde.preview.emergentagent.com; EXPO_PUBLIC_SUPABASE_URL y ANON_KEY están vacías. Convocatoria, Admin pending-cloud y Partido vacío fueron verificados en viewport 375x667.",
+  "rca_of_issue": "schema.sql declara attendance PRIMARY KEY (match_id, player_id), mientras cloud.ts usa user_id para upsert/delete. La segunda sesión colisiona o no puede borrar la fila de la primera. Además applySnapshot construye MatchHistory únicamente desde matches y no agrega stats/attendance al historial."
+}

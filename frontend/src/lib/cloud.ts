@@ -4,7 +4,7 @@ import type { Attendance, MatchConfig, PlayerStats, Position, Team } from "@/src
 export type CloudPlayer = { id: string; name: string; number: string; position: Position; active: boolean };
 export type CloudMatch = { id: string; played_at: string; location: string; home_score: number; away_score: number; status: "scheduled" | "played" | "cancelled"; mvp_player_id: string | null };
 export type CloudStat = { match_id: string; player_id: string; team: Team; goals: number; assists: number };
-export type CloudAttendance = { match_id: string; player_id: string; user_id: string; attending: boolean };
+export type CloudAttendance = { match_id: string; player_id: string; user_id: string; attending: boolean; updated_at: string };
 export type CloudSnapshot = { players: CloudPlayer[]; matches: CloudMatch[]; stats: CloudStat[]; attendance: CloudAttendance[]; isAdmin: boolean };
 
 export async function ensureSession() {
@@ -28,7 +28,7 @@ export async function loadSnapshot(): Promise<CloudSnapshot> {
     client.from("players").select("id,name,number,position,active").order("name"),
     client.from("matches").select("id,played_at,location,home_score,away_score,status,mvp_player_id").in("status", ["scheduled", "played"]).order("played_at", { ascending: false }),
     client.from("match_player_stats").select("match_id,player_id,team,goals,assists"),
-    client.from("attendance").select("match_id,player_id,user_id,attending"),
+    client.from("attendance").select("match_id,player_id,user_id,attending,updated_at").order("updated_at", { ascending: true }),
     currentUser(),
   ]);
   const results = [players, matches, stats, attendance];
@@ -61,10 +61,14 @@ export async function removeCloudPlayer(id: string) {
 
 export async function saveCloudMatch(config: MatchConfig, id?: string) {
   const playedAt = toIso(config.date, config.time);
-  const payload = { played_at: playedAt, location: config.venue, status: "scheduled", home_score: 0, away_score: 0 };
-  const result = id ? await getSupabase().from("matches").update(payload).eq("id", id) : await getSupabase().from("matches").insert(payload).select("id").single();
+  if (id) {
+    const result = await getSupabase().from("matches").update({ played_at: playedAt, location: config.venue }).eq("id", id);
+    if (result.error) throw result.error;
+    return id;
+  }
+  const result = await getSupabase().from("matches").insert({ played_at: playedAt, location: config.venue, status: "scheduled", home_score: 0, away_score: 0 }).select("id").single();
   if (result.error) throw result.error;
-  return id ?? (result.data as { id: string }).id;
+  return result.data.id as string;
 }
 
 export async function saveCloudScore(id: string, green: number, yellow: number) {
@@ -89,11 +93,16 @@ export async function saveCloudAttendance(matchId: string, playerId: string, att
     if (result.error) throw result.error;
     return;
   }
-  const result = await getSupabase().from("attendance").upsert({ match_id: matchId, player_id: playerId, user_id: user.id, attending: attendance === "yes", updated_at: new Date().toISOString() });
+  const result = await getSupabase().from("attendance").upsert({ match_id: matchId, player_id: playerId, user_id: user.id, attending: attendance === "yes", updated_at: new Date().toISOString() }, { onConflict: "match_id,player_id,user_id" });
   if (result.error) throw result.error;
 }
 
-export async function finalizeCloudMatch(id: string, green: number, yellow: number, mvpId: string) {
+export async function finalizeCloudMatch(id: string, green: number, yellow: number, mvpId: string, assignments: Record<string, Team>, stats: Record<string, PlayerStats>) {
+  const rows = Object.entries(assignments).map(([playerId, team]) => ({ match_id: id, player_id: playerId, team, goals: stats[playerId]?.goals ?? 0, assists: stats[playerId]?.assists ?? 0 }));
+  if (rows.length) {
+    const statsResult = await getSupabase().from("match_player_stats").upsert(rows);
+    if (statsResult.error) throw statsResult.error;
+  }
   const result = await getSupabase().from("matches").update({ home_score: green, away_score: yellow, mvp_player_id: mvpId || null, status: "played" }).eq("id", id);
   if (result.error) throw result.error;
 }
