@@ -51,7 +51,7 @@ type Store = {
   setScore: (team: Team, delta: number) => void;
   setStat: (id: string, field: keyof PlayerStats, delta: number) => void;
   setMvp: (id: string) => void;
-  finalizeMatch: () => Promise<void>;
+  finalizeMatch: () => Promise<boolean>;
   updatePlayedMatch: (id: string, input: PlayedMatchEdit) => Promise<boolean>;
   deletePlayedMatch: (id: string) => Promise<boolean>;
   prepareNextMatch: () => void;
@@ -149,7 +149,16 @@ export function AppProvider({ children }: PropsWithChildren) {
     setState((current) => ({ ...current, mvpId: id }));
     if (isAdmin && state.upcomingMatchId) void saveCloudMvp(state.upcomingMatchId, id).catch((error) => setSyncError(error instanceof Error ? error.message : "No se pudo guardar el MVP"));
   }, [isAdmin, state.upcomingMatchId]);
-  const finalizeMatch = useCallback(() => adminAction(async () => { if (!state.upcomingMatchId) throw new Error("Guarda primero el próximo partido"); await finalizeCloudMatch(state.upcomingMatchId, state.scoreGreen, state.scoreYellow, state.mvpId, state.assignments, state.stats); }), [adminAction, state.assignments, state.mvpId, state.scoreGreen, state.scoreYellow, state.stats, state.upcomingMatchId]);
+  const finalizeMatch = useCallback(async () => {
+    if (!isAdmin) { setSyncError("Solo el administrador puede editar estos datos."); return false; }
+    try {
+      setSyncError("");
+      if (!state.upcomingMatchId) throw new Error("Guarda primero el próximo partido");
+      await finalizeCloudMatch(state.upcomingMatchId, state.scoreGreen, state.scoreYellow, state.mvpId, state.assignments, state.stats);
+      await refresh();
+      return true;
+    } catch (error) { setSyncError(error instanceof Error ? error.message : "No se pudo guardar el cambio"); return false; }
+  }, [isAdmin, refresh, state.assignments, state.mvpId, state.scoreGreen, state.scoreYellow, state.stats, state.upcomingMatchId]);
   const updatePlayedMatch = useCallback(async (id: string, input: PlayedMatchEdit) => {
     if (!isAdmin) { setSyncError("Solo el administrador puede editar estos datos."); return false; }
     try { setSyncError(""); await updateCloudPlayedMatch(id, input); await refresh(); return true; }

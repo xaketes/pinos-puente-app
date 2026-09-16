@@ -1,0 +1,50 @@
+{
+  "summary": "Iteración 7 — Verificación de los 2 bugs del usuario. BUG 1 (globo 'Partido finalizado' al pulsar VOY): NO REPRODUCIBLE en el bundle actual y verificado exhaustivamente — en Convocatoria (anon y admin) no existe ningún banner/diálogo 'Partido finalizado' en ningún estado; pulsar VOY del 1er jugador sube el contador 0→1, marca la fila en verde (rgb(16,185,129)) y no abre nada; 2º VOY igual (0→2). REST confirma que marcar asistencia nunca cambia el status del partido (sigue 'scheduled'). Hipótesis del bundle antiguo cacheado en el Expo Go del usuario se mantiene. BUG 1b: PASS (sin banner en ningún estado). BUG 1c: FAIL — el diálogo match-finished-dialog NUNCA llega a verse tras finalizar con éxito (aunque finalizeMatch devuelve true y la clasificación SÍ suma puntos: Moreno 3→6 PTS, +1 PJ durante la prueba): match.tsx:23 hace early-return al EmptyState cuando confirmed.length===0, y tras el refresh interno de finalizeMatch() el partido pasa a 'played', upcomingMatchId='' y confirmed=0, desmontando la rama que contiene el ConfirmDialog antes de que setFinishedOpen(true) pinte nada. BUG 2: PASS 4/4 — cada fila del historial muestra history-delete-<id> solo para admin; pulsar papelera abre standings-delete-dialog SIN navegar al detalle; Cancelar no borra; Eliminar borra y la clasificación vuelve a los valores reales (Moreno 3PTS/1PJ/4GOL/1AST, Ortega 0/1/2/1). BUG 2b: PASS — en sesión anónima no hay papeleras y el detalle muestra la tarjeta con candado. Regresión: 4 pestañas tappeables, eslint limpio, tsc limpio. LIMPIEZA OBLIGATORIA HECHA: partido 'Test Borrar' (7b3ae0b9) borrado vía UI con cascada verificada por REST (matches/match_player_stats/attendance vacíos); la DB del usuario queda solo con sus datos reales (Jose Ortega, Jose Moreno, partido 'Pinos' 4-2 del 25/09/2026). Sesión dejada en anónimo.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "MatchScreen", "issue": "match-finished-dialog nunca se muestra tras finalizar con éxito: el early-return 'if (confirmed.length === 0)' (match.tsx:23) desmonta la rama que contiene el ConfirmDialog (match.tsx:41) porque tras finalizeMatch()→refresh() upcomingMatchId queda '' y confirmed pasa a 0. setFinishedOpen(true) se ejecuta sobre un árbol ya desmontado. La finalización en sí funciona (puntos sumados, historial actualizado).", "testID": "match-finished-dialog", "priority": "HIGH"}
+    ],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": [
+      {"component": "StandingsScreen history row", "issue": "Pressable anidado dentro de Pressable (history-delete-<id> dentro de history-item-<id>) genera HTML inválido en web (button dentro de button) y error de hidratación 'In HTML, <button> cannot be a descendant of <button>' que dispara el overlay LogBox en dev tapando la tab bar. Funcionalmente el click interno NO propaga al padre (verificado: abre diálogo sin navegar), pero el HTML inválido puede romper SSR/hidratación y accesibilidad. Reference: /app/frontend/app/(tabs)/standings.tsx:29"}
+    ]
+  },
+  "test_report_links": [
+    "/app/test_reports/iteration_7.json",
+    "/app/backend/tests/test_supabase_bug7_flows.py",
+    "/app/test_reports/pytest/pytest_results_it7.xml",
+    "/app/test_reports/screens/it7_anon_detail.png",
+    "/app/test_reports/screens/it7_after_voy.png",
+    "/app/test_reports/screens/it7_finished_dialog.png",
+    "/app/test_reports/screens/it7_standings_delete_dialog.png",
+    "/app/test_reports/screens/it7_after_delete.png"
+  ],
+  "action_items": [
+    "BUG 1c (HIGH): hacer visible match-finished-dialog tras finalizar con éxito — renderizar el ConfirmDialog fuera de las ramas early-return de match.tsx (p.ej. elevarlo junto a Screen en ambas ramas, o no depender de confirmed.length para incluir el Modal), o mostrar el diálogo antes del refresh. Retestar: crear partido, 2 VOY, asignar VERDE/AMARILLO, finalizar → el diálogo debe verse.",
+    "RN web (MEDIUM): eliminar el Pressable anidado en standings.tsx:29 — reestructurar la fila como View contenedor con dos Pressables hermanos (zona navegable + papelera) para quitar el error de hidratación '<button> cannot contain a nested <button>'.",
+    "Usuario: el globo original del bug 1 procede casi con seguridad de un bundle antiguo cacheado en su Expo Go — pedirle que recargue la app (shake → Reload) o reabra el enlace para obtener el bundle nuevo.",
+    "Nota testing: en E2E web el overlay LogBox (solo dev) tapa la tab bar inferior; usar page.goto o cerrar el overlay si se tappean pestañas tras visitar Tabla. NO usar JS que borre hijos de body: rompe el portal de los Modal de RNW (falso negativo detectado y descartado en esta iteración)."
+  ],
+  "critical_code_review_comments": [
+    "match.tsx:40 — la corrección 'solo abrir diálogo si finalizeMatch() devuelve ok' está bien aplicada, pero es código muerto en la práctica por el early-return de la línea 23 (ver ui_bugs). Además state.finalized es siempre false en la era Supabase (store.tsx:94), por lo que el label 'Partido finalizado' del botón finalize-match tampoco aparece nunca — comportamiento correcto para el bug reportado.",
+    "index.tsx (Convocatoria) — confirmado: no queda ninguna referencia a 'Partido finalizado' ni a state.finalized; los Pressable VOY/NO VOY solo llaman setAttendance. Grep completo del repo: 'Partido finalizado' solo existe en match.tsx (label + diálogo).",
+    "store.tsx:124-128 setAttendance — solo actualiza asistencia y llama saveCloudAttendance; sin efectos laterales que puedan finalizar el partido. Verificado también por REST (status sigue 'scheduled' tras upsert de attendance).",
+    "standings.tsx:29,31 — papelera history-delete-<id> solo para isAdmin, ConfirmDialog standings-delete-dialog con Cancelar/Eliminar; deletePlayedMatch exige isAdmin y refresca. Verificado E2E incluida la restauración de la clasificación.",
+    "eslint y tsc --noEmit limpios. Sin paquetes deprecados (sin expo-av, expo-barcode-scanner, expo-background-fetch)."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_supabase_bug7_flows.py",
+    "/app/test_reports/iteration_7.json"
+  ],
+  "success_rate": {"backend": "100% (9/9 pytest REST: asistencia no finaliza, cascada de borrado, datos reales intactos, limpieza)", "frontend": "88% (14/16 checks E2E: BUG1 6/6, BUG1b 1/1, BUG2 4/4, BUG2b 2/2, tabs/eslint/tsc OK; FALLA BUG1c: diálogo post-finalizar nunca visible)"},
+  "seed_data_creation": "Partido de prueba 'Test Borrar' (20/01/2026, id 7b3ae0b9) creado, finalizado (1-0, Moreno VERDE / Ortega AMARILLO) y BORRADO vía la propia papelera del historial durante la prueba. Limpieza verificada por REST: 0 filas en matches/match_player_stats/attendance para ese id y ningún partido con pabellón 'Test%'. DB final = solo datos reales del usuario (Jose Ortega, Jose Moreno activos; partido 'Pinos' 4-2 del 25/09/2026). Sesión cerrada (logout admin → anónimo).",
+  "retest_needed": true,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "BUG 1 cerrado (no reproducible; bundle viejo del usuario como causa probable). BUG 2 cerrado (papelera en historial funciona con Cancelar/Eliminar y recalcula clasificación). ÚNICO PENDIENTE: BUG 1c — match-finished-dialog no visible tras finalizar por early-return confirmed.length===0 en match.tsx:23; cuando E1 lo arregle, retestar el flujo completo: login admin → crear partido 'Test Borrar' → 2 VOY → asignar VERDE/AMARILLO → finalizar → diálogo visible → borrar partido con papelera → limpieza REST. Tests de regresión en /app/backend/tests/test_supabase_bug7_flows.py (auto-limpian). Datos reales del usuario: NO tocar (jugadores Jose Ortega c075f261, Jose Moreno 3148050b; partido Pinos 196e4aca). Ojo E2E: overlay LogBox dev tapa la tab bar tras visitar Tabla (usar page.goto); no borrar hijos de body con JS (rompe los Modal RNW).",
+  "rca_of_issue": "BUG 1 (reportado: globo 'Partido finalizado' al pulsar VOY): NO reproducible en el bundle actual. RCA: el aviso que vio el usuario procede de un bundle antiguo cacheado en su Expo Go (en código viejo el diálogo de finalizado se abría siempre, incluso en fallo). En el código actual: (1) Convocatoria ya no tiene banner ni lógica de finalizado; (2) el diálogo solo se abre si finalizeMatch() resuelve ok; (3) verificado E2E que VOY solo sube el contador y marca la fila, y por REST que la asistencia no altera el status del partido. Mitigación: usuario debe recargar el bundle (Reload en Expo Go). HALLAZGO NUEVO (BUG 1c): el diálogo match-finished-dialog es inalcanzable — match.tsx:23 early-return EmptyState cuando confirmed.length===0; tras finalizar, refresh() deja upcomingMatchId='' y confirmed=0, desmontando la rama con el ConfirmDialog antes de que setFinishedOpen(true) tenga efecto. Reproducción: login admin, crear partido, 2 VOY, asignar equipos, finalizar → historial actualizado pero sin diálogo. Mitigación: renderizar el ConfirmDialog fuera de las ramas condicionales."
+}

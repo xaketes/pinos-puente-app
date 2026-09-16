@@ -6,7 +6,7 @@ import { useApp } from "@/src/store";
 import { makeStyles, useTheme } from "@/src/theme";
 
 export default function ConvocatoriaScreen() {
-  const { state, hydrated, isAdmin, setAttendance, setMatch, saveMatch, prepareNextMatch } = useApp();
+  const { state, hydrated, isAdmin, setAttendance, setMatch, saveMatch } = useApp();
   const { colors } = useTheme();
   const styles = useStyles();
   const { date, time, venue } = state.match;
@@ -26,7 +26,6 @@ export default function ConvocatoriaScreen() {
       <Text style={[sharedStyles.fieldLabel, { color: colors.muted }]}>Pabellón</Text><TextInput editable={isAdmin} testID="match-venue" value={venue} onChangeText={(value) => setMatch({ venue: value })} placeholder="Nombre del pabellón" placeholderTextColor={colors.muted} style={[sharedStyles.input, { color: isAdmin ? colors.onSurface : colors.muted, backgroundColor: colors.surfaceTertiary, borderColor: colors.border }]} />
       {isAdmin ? <View style={styles.saveMatch}><PrimaryButton testID="save-match" label={state.upcomingMatchId ? "Guardar cambios" : "Crear próximo partido"} icon="cloud-upload-outline" onPress={() => { void saveMatch(); }} /></View> : <Text style={[styles.readOnly, { color: colors.muted }]}>Solo el administrador puede editar los datos del partido.</Text>}
     </View>
-    {state.finalized ? <View style={[styles.notice, { backgroundColor: colors.brandTertiary, borderColor: colors.borderStrong }]}><MaterialCommunityIcons name="check-decagram" size={20} color={colors.brandPrimary} /><View style={styles.noticeCopy}><Text style={[styles.noticeTitle, { color: colors.onSurface }]}>Partido finalizado</Text><Text style={[styles.noticeText, { color: colors.muted }]}>Las estadísticas ya están en la clasificación.</Text></View><Pressable onPress={prepareNextMatch} accessibilityRole="button"><Text style={[styles.noticeAction, { color: colors.brandPrimary }]}>Nuevo</Text></Pressable></View> : null}
     <SectionTitle title="Jugadores" action={`${state.players.length} EN PLANTILLA`} />
     {state.players.length === 0 ? <EmptyState icon="account-plus-outline" title="La plantilla está vacía" message="Añade tus jugadores desde Administración para empezar la convocatoria." /> : state.players.map((player) => <View key={player.id} style={[styles.playerCard, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}>
       <View style={[styles.number, { backgroundColor: colors.surfaceTertiary }]}><Text style={[styles.numberText, { color: colors.brandSecondary }]}>{player.number || "—"}</Text></View><View style={styles.playerCopy}><Text style={[styles.playerName, { color: colors.onSurface }]}>{player.name}</Text><Text style={[styles.playerPosition, { color: colors.muted }]}>{player.position}</Text></View>
