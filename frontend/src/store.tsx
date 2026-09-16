@@ -1,5 +1,6 @@
 import {
   addCloudPlayer,
+  deleteCloudMatch,
   ensureSession,
   finalizeCloudMatch,
   loadSnapshot,
@@ -52,6 +53,7 @@ type Store = {
   setMvp: (id: string) => void;
   finalizeMatch: () => Promise<void>;
   updatePlayedMatch: (id: string, input: PlayedMatchEdit) => Promise<boolean>;
+  deletePlayedMatch: (id: string) => Promise<boolean>;
   prepareNextMatch: () => void;
   resetSeason: () => Promise<void>;
 };
@@ -153,9 +155,14 @@ export function AppProvider({ children }: PropsWithChildren) {
     try { setSyncError(""); await updateCloudPlayedMatch(id, input); await refresh(); return true; }
     catch (error) { setSyncError(error instanceof Error ? error.message : "No se pudo guardar el cambio"); return false; }
   }, [isAdmin, refresh]);
+  const deletePlayedMatch = useCallback(async (id: string) => {
+    if (!isAdmin) { setSyncError("Solo el administrador puede editar estos datos."); return false; }
+    try { setSyncError(""); await deleteCloudMatch(id); await refresh(); return true; }
+    catch (error) { setSyncError(error instanceof Error ? error.message : "No se pudo borrar el partido"); return false; }
+  }, [isAdmin, refresh]);
   const prepareNextMatch = useCallback(() => setState((current) => ({ ...current, match: { date: "", time: "", venue: "" }, upcomingMatchId: "", assignments: {}, scoreGreen: 0, scoreYellow: 0, stats: {}, mvpId: "", finalized: false, players: current.players.map((player) => ({ ...player, attendance: "pending" })) })), []);
   const resetSeason = useCallback(() => adminAction(resetCloudSeason), [adminAction]);
-  const value = useMemo(() => ({ state, hydrated, cloudStatus, syncError, isAdmin, refresh, loginAdmin, logoutAdmin, addPlayer, removePlayer, setAttendance, setMatch, saveMatch, setAssignment, setScore, setStat, setMvp, finalizeMatch, updatePlayedMatch, prepareNextMatch, resetSeason }), [state, hydrated, cloudStatus, syncError, isAdmin, refresh, loginAdmin, logoutAdmin, addPlayer, removePlayer, setAttendance, setMatch, saveMatch, setAssignment, setScore, setStat, setMvp, finalizeMatch, updatePlayedMatch, prepareNextMatch, resetSeason]);
+  const value = useMemo(() => ({ state, hydrated, cloudStatus, syncError, isAdmin, refresh, loginAdmin, logoutAdmin, addPlayer, removePlayer, setAttendance, setMatch, saveMatch, setAssignment, setScore, setStat, setMvp, finalizeMatch, updatePlayedMatch, deletePlayedMatch, prepareNextMatch, resetSeason }), [state, hydrated, cloudStatus, syncError, isAdmin, refresh, loginAdmin, logoutAdmin, addPlayer, removePlayer, setAttendance, setMatch, saveMatch, setAssignment, setScore, setStat, setMvp, finalizeMatch, updatePlayedMatch, deletePlayedMatch, prepareNextMatch, resetSeason]);
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
 }
 

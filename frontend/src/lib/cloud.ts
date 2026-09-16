@@ -107,6 +107,11 @@ export async function finalizeCloudMatch(id: string, green: number, yellow: numb
   if (result.error) throw result.error;
 }
 
+export async function deleteCloudMatch(id: string) {
+  const result = await getSupabase().from("matches").delete().eq("id", id);
+  if (result.error) throw result.error;
+}
+
 export async function resetCloudSeason() {
   const result = await getSupabase().rpc("reset_season");
   if (result.error) throw result.error;

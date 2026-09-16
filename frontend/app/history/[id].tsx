@@ -3,6 +3,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState, type ReactNode } from "react";
 import { Pressable, Text, View } from "react-native";
 
+import { ConfirmDialog } from "@/src/components/confirm";
 import { EditMatchForm } from "@/src/components/edit-match";
 import { EmptyState, Screen, SectionTitle } from "@/src/components/screen";
 import { type MatchPlayerDetail, type Team, useApp } from "@/src/store";
@@ -11,11 +12,14 @@ import { makeStyles, useTheme } from "@/src/theme";
 export default function HistoryDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { state, hydrated, isAdmin } = useApp();
+  const { state, hydrated, isAdmin, deletePlayedMatch } = useApp();
   const { colors } = useTheme();
   const styles = useStyles();
   const [editing, setEditing] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const match = state.history.find((item) => item.id === id);
+
+  const remove = async () => { const ok = await deletePlayedMatch(id ?? ""); if (ok) router.back(); };
 
   if (!hydrated) return <Screen scroll={false}><View style={styles.center}><MaterialCommunityIcons name="soccer" color={colors.brandPrimary} size={36} /><Text style={[styles.loading, { color: colors.muted }]}>Cargando el partido…</Text></View></Screen>;
 
@@ -50,6 +54,8 @@ export default function HistoryDetailScreen() {
     </View>
     <TeamSection title="Equipo Verde" accent={colors.brandPrimary} players={greenPlayers} colors={colors} styles={styles} testID="history-green-team" />
     <TeamSection title="Equipo Amarillo" accent={colors.brandSecondary} players={yellowPlayers} colors={colors} styles={styles} testID="history-yellow-team" />
+    {isAdmin ? <View style={styles.dangerZone}><Pressable testID="history-delete" accessibilityRole="button" onPress={() => setDeleteOpen(true)} style={[styles.deleteMatchButton, { borderColor: colors.error }]}><MaterialCommunityIcons name="trash-can-outline" size={18} color={colors.error} /><Text style={[styles.deleteMatchText, { color: colors.error }]}>Eliminar partido del historial</Text></Pressable></View> : null}
+    <ConfirmDialog testID="history-delete-dialog" visible={deleteOpen} icon="trash-can-outline" title="Eliminar partido" message="Se borrará el partido con sus goles, asistencias y puntos de la clasificación. Esta acción no se puede deshacer." confirmLabel="Eliminar" cancelLabel="Cancelar" destructive onConfirm={() => { void remove(); }} onClose={() => setDeleteOpen(false)} />
   </Screen>;
 }
 
@@ -105,4 +111,7 @@ const useStyles = makeStyles(() => ({
   playerName: { fontSize: 14, fontWeight: "800" },
   statPill: { flexDirection: "row", alignItems: "center", gap: 4, minWidth: 40, justifyContent: "center" },
   statText: { fontSize: 14, fontWeight: "900" },
+  dangerZone: { marginHorizontal: 18, marginTop: 20 },
+  deleteMatchButton: { minHeight: 48, borderRadius: 12, borderWidth: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
+  deleteMatchText: { fontSize: 13, fontWeight: "900" },
 }));

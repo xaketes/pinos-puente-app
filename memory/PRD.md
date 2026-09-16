@@ -92,6 +92,12 @@ Una peña de fútbol sala necesita gestionar convocatorias, repartir equipos, re
 - Nuevo componente `src/components/edit-match.tsx`; `MatchHistory` ahora incluye `time` para prellenar el formulario.
 - Verificado E2E con datos sembrados: cambios guardados en Supabase (REST confirmado) y reflejados en el detalle; datos de prueba eliminados.
 
+### 2026-09-16 — Borrado de partidos
+
+- El admin puede eliminar un partido completo desde su detalle de historial (botón "Eliminar partido del historial" + diálogo de confirmación destructivo).
+- `deleteCloudMatch` borra la fila de `matches`; la cascada elimina estadísticas y asistencias, y la clasificación se recalcula sola.
+- Verificado E2E: el partido desaparece de la UI y de Supabase, el jugador se conserva.
+
 ## Backlog priorizado
 
 ### P0 — Completado
