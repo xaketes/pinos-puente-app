@@ -57,6 +57,13 @@ Una peña de fútbol sala necesita gestionar convocatorias, repartir equipos, re
 - `eslint` y `tsc --noEmit` limpios; retest de regresión frontend 20/20 checks superados (reporte `/app/test_reports/iteration_4.json` regenerado).
 - Retirada de la UI la pista con la contraseña inicial del administrador.
 
+### 2026-09-16 — Credenciales Supabase configuradas
+
+- Guardadas `EXPO_PUBLIC_SUPABASE_URL` y `EXPO_PUBLIC_SUPABASE_ANON_KEY` reales en `frontend/.env` (proyecto `wafagwibbakdopgcqfkb`).
+- Corregido el arranque: si la sesión anónima falla, la app muestra el error en vez de quedarse cargando indefinidamente.
+- Verificado contra el proyecto real: faltan ejecutar el SQL del esquema y activar "Anonymous sign-ins" en Authentication → Providers.
+- Entregado al usuario el SQL definitivo (tablas, RLS, Realtime, RPC de reinicio) y las instrucciones para crear el usuario administrador con rol `admin`.
+
 ## Backlog priorizado
 
 ### P0 — Completado

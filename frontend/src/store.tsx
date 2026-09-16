@@ -101,9 +101,8 @@ export function AppProvider({ children }: PropsWithChildren) {
     if (!supabaseConfigured) return undefined;
     let unsubscribe: (() => void) | undefined;
     void ensureSession().then(() => {
-      void refresh();
       unsubscribe = subscribeCloud(() => { void refresh(); });
-    }).catch(() => undefined);
+    }).catch(() => undefined).finally(() => { void refresh(); });
     return () => unsubscribe?.();
   }, [refresh]);
 
