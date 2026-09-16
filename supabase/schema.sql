@@ -94,7 +94,7 @@ create or replace function public.reset_season()
 returns void language plpgsql security definer set search_path = public
 as $$ begin
   if not public.is_admin() then raise exception 'admin only'; end if;
-  delete from public.matches;
+  delete from public.matches where true;
 end; $$;
 revoke execute on function public.reset_season() from public, anon;
 grant execute on function public.reset_season() to authenticated;

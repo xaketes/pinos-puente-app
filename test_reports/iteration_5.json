@@ -1,0 +1,56 @@
+{
+  "summary": "PRIMERA PRUEBA E2E CONTRA SUPABASE REAL: SUPERADA en 10/12 puntos. Verificado: (1) login admin joseilloortega600@gmail.com/123456 con role=admin en app_metadata (JWT confirmado vía Auth API) → barra 'Modo Administrador activo' y formularios desbloqueados; (2) alta de 5 jugadores (Test Jugador 1-5, Portero/Cierre/Ala/Pívot) persistida en tabla players y visible en Convocatoria; (3) partido creado con Fecha 25/01/2026 (formato DD/MM/AAAA parseado bien a ISO), Hora 20:30, Pabellón 'Pabellon Test' → matches.status='scheduled' en Supabase; (4) asistencia VOY x4 / NO VOY x1 persistida en attendance; (5) TIEMPO REAL verificado: dos páginas con sesiones anónimas DISTINTAS (contextos separados), marcar VOY en una actualizó el contador de la otra 0/5→1/5→4/5 SIN recargar (postgres_changes OK); (6) Partido: equipos Verde/Amarillo asignados, marcador 3-2, goles/asistencias por jugador, MVP=TJ1, Finalizar → matches.status='played', 4 filas en match_player_stats correctas; (7) Clasificación exacta: ganadores +3 pts/+1 PJ (TJ1: 3pts 1PJ 2g 1mvp; TJ2: 3pts 1PJ 1g 1a), perdedores 0pts/+1PJ (TJ3, TJ4), TJ5 sin jugar 0; (8) Historial muestra fecha, pabellón, marcador 3-2, MVP, equipos, 4 jugadores, 5 goles, 2 asistencias; (9) verificación REST directa OK; (11) logout admin → UI vuelve a solo-lectura (login card, save-match oculto, inputs readonly); (12) cero errores de consola/React/hooks, eslint y tsc limpios. FALLOS: (10) reset_season RPC falla en Supabase real ('DELETE requires a WHERE clause', pg-safeupdate) — corregido en schema.sql, PENDIENTE que el usuario re-ejecute el bloque de la función en SQL Editor; Alert.alert (confirmaciones de reset/borrar jugador) es no-op en web preview. Datos de prueba LIMPIADOS: partido borrado (cascada a stats/attendance verificada) y 5 jugadores desactivados (active=false).",
+  "backend_issues": {
+    "critical": [
+      {"endpoint": "POST /rest/v1/rpc/reset_season (Supabase)", "issue": "Falla con {'code':'21000','message':'DELETE requires a WHERE clause'}: la extensión pg-safeupdate de Supabase bloquea 'delete from public.matches;' sin WHERE. La función security definer se ejecuta vía PostgREST con safeupdate activo. Corregido en /app/supabase/schema.sql (línea ~97) a 'delete from public.matches where true;' — el usuario DEBE re-ejecutar ese bloque en el SQL Editor de su proyecto para que el reinicio funcione. Verificado que el chequeo is_admin() pasa y que las cascadas ON DELETE CASCADE de match_player_stats/attendance funcionan (probado borrando el partido manualmente: 0 filas restantes).", "priority": "CRITICAL"}
+    ],
+    "minor": [
+      {"endpoint": "GET /rest/v1/* con solo apikey (sin JWT)", "issue": "Devuelve [] por RLS (esperado): las políticas exigen rol authenticated. Para verificar datos vía REST hay que usar el access_token de una sesión anónima (POST /auth/v1/signup con body {}) o del admin. No es un bug, solo nota de verificación."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "AdminScreen / ConvocatoriaScreen (Alert.alert)", "issue": "Alert.alert es no-op en react-native-web: las confirmaciones de reset-season (testID reset-season) y delete-player-<id> NO se muestran en el preview web, por lo que esas acciones destructivas son inalcanzables desde la UI web (clic en REINICIAR no hace nada; verificado que matches seguía existiendo tras el clic). En nativo (Expo Go) sí funciona. Recomendación: modal de confirmación propio o window.confirm en Platform.OS==='web'.", "testID": "reset-season", "priority": "HIGH (web) / N/A (nativo)"}
+    ],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": [
+      {"component": "ConvocatoriaScreen (app/(tabs)/index.tsx:27)", "issue": "Nodo de texto suelto (espacio) dentro de <View> tras <PrimaryButton save-match>: generaba console.error 'Unexpected text node: . A text node cannot be a child of a <View>' y un overlay LogBox en dev que interceptaba el primer clic en save-match (el partido no se creó en el primer intento). CORREGIDO por T1 eliminando el espacio. Reference: /app/frontend/app/(tabs)/index.tsx:27"},
+      {"component": "Alert.alert en web", "issue": "React Native Alert no renderiza en plataforma web (no-op silencioso, sin error de consola). Afecta a admin.tsx (reset-season, delete-player) y match.tsx (aviso 'Partido finalizado' tras finalizar). Reference: /app/frontend/app/(tabs)/admin.tsx:23,39 y /app/frontend/app/(tabs)/match.tsx:38"}
+    ]
+  },
+  "test_report_links": [
+    "/app/test_reports/iteration_5.json",
+    "/app/test_reports/screens/it5_admin.png",
+    "/app/test_reports/screens/it5_players.png",
+    "/app/test_reports/screens/it5_match_created2.png",
+    "/app/test_reports/screens/it5_attendance_p1.png",
+    "/app/test_reports/screens/it5_attendance_p2.png",
+    "/app/test_reports/screens/it5_standings.png",
+    "/app/test_reports/screens/it5_logout.png"
+  ],
+  "action_items": [
+    "CRÍTICO (requiere acción del USUARIO en Supabase): re-ejecutar en el SQL Editor el bloque de la función reset_season ya corregido en /app/supabase/schema.sql ('delete from public.matches where true;'). Sin eso, el reinicio de temporada falla siempre con error 21000. Después, retestar testID reset-season.",
+    "HIGH (web): sustituir Alert.alert por un modal de confirmación cross-platform (o window.confirm en web) en reset-season y delete-player; ahora mismo no se pueden confirmar en el preview web.",
+    "Menor: el aviso 'Partido finalizado' tras finalize-match (match.tsx:38) usa Alert.alert y no se ve en web; el cambio de estado ya se refleja por refresh, pero el feedback visual falta en web.",
+    "Nota de verificación: para comprobar datos vía Supabase REST se necesita un JWT (sesión anónima o admin); con solo la apikey las SELECT devuelven [] por RLS."
+  ],
+  "critical_code_review_comments": [
+    "schema.sql:97 — 'delete from public.matches;' incompatible con pg-safeupdate de Supabase (corregido a 'where true' en el repo; falta aplicar en el proyecto real).",
+    "cloud.ts:96 upsert de attendance con onConflict match_id,player_id,user_id — probado con 2 usuarios anónimos distintos en paralelo sin colisiones; OK.",
+    "store.tsx applySnapshot — cálculo de puntos/PJ/goles/asistencias/MVP verificado contra datos reales: exacto (+3 ganadores, +0 perdedores, +1 PJ, MVP suma trofeo sin puntos).",
+    "Realtime subscribeCloud (cloud.ts:115-120) — postgres_changes en las 4 tablas funcionando: propagación a segunda sesión <5s sin recargar.",
+    "Sin paquetes deprecados (expo-av, expo-barcode-scanner, expo-background-fetch ausentes). testIDs completos en todos los elementos interactivos. eslint y tsc --noEmit limpios tras el fix."
+  ],
+  "updated_files": [
+    "/app/frontend/app/(tabs)/index.tsx",
+    "/app/supabase/schema.sql",
+    "/app/test_reports/iteration_5.json"
+  ],
+  "success_rate": {"backend": "90% (todo Supabase OK salvo RPC reset_season bloqueado por safeupdate)", "frontend": "95% (todos los flujos E2E OK; Alert.alert no funciona en web)"},
+  "seed_data_creation": "Se crearon 5 jugadores 'Test Jugador 1-5' y 1 partido de prueba finalizado 3-2. LIMPIEZA REALIZADA al final: partido borrado vía REST admin (cascada eliminó stats y asistencias) y los 5 jugadores desactivados (active=false, mismo efecto que delete-player de la app). Quedan en la DB real solo como filas inactivas invisibles en la app; el usuario puede borrarlas definitivamente con: delete from public.players where name like 'Test Jugador %'; No queda ningún partido ni estadística de prueba.",
+  "retest_needed": true,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "App en https://torneo-verde.preview.emergentagent.com conectada a Supabase REAL y funcional. PENDIENTE DE RETEST: reinicio de temporada (testID reset-season) una vez el usuario re-ejecute la función reset_season corregida (schema.sql) en su SQL Editor — la versión desplegada en su proyecto aún tiene 'delete from public.matches;' sin WHERE y falla con 21000. OJO: en web Alert.alert no renderiza, así que reset/delete-player no son accionables desde UI web hasta que E1 cambie a modal cross-platform; mientras tanto se puede probar el RPC por REST con JWT admin. Navegación por tabs: usar selector a[href='/admin'] etc. (click por texto del tab no fiable). Nombres de prueba: prefijo 'Test Jugador'. Ya no quedan datos de prueba activos.",
+  "rca_of_issue": "BUG 1 (CRÍTICO, reset_season): Reproducción: POST /rest/v1/rpc/reset_season con JWT admin → {'code':'21000','message':'DELETE requires a WHERE clause'}. Causa raíz: Supabase activa la extensión pg-safeupdate en las sesiones de PostgREST; la función security definer schema.sql:97 ejecuta 'delete from public.matches;' sin WHERE y es rechazada. El chequeo is_admin() sí funciona (el error es posterior). Mitigación aplicada en repo: 'delete from public.matches where true;' (satisface safeupdate; las cascadas ON DELETE CASCADE limpian stats y attendance — verificado empíricamente). Requiere que el usuario re-ejecute el CREATE OR REPLACE FUNCTION en su SQL Editor. BUG 2 (HIGH web): Alert.alert es no-op en react-native-web → confirmaciones de reset/delete-player inalcanzables en preview web; reproducido clicando reset-season (sin diálogo, sin cambios en DB). Mitigación sugerida: modal propio o window.confirm en web. BUG 3 (MENOR, corregido): espacio suelto tras <PrimaryButton/> en index.tsx:27 → 'Unexpected text node' + overlay LogBox que interceptaba clics en save-match; corregido y verificado (creación de partido OK, consola limpia)."
+}

@@ -1,7 +1,8 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useState } from "react";
-import { Alert, Pressable, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 
+import { ConfirmDialog } from "@/src/components/confirm";
 import { EmptyState, Header, PrimaryButton, Screen, SectionTitle } from "@/src/components/screen";
 import { useApp } from "@/src/store";
 import { makeStyles, useTheme } from "@/src/theme";
@@ -11,6 +12,7 @@ export default function MatchScreen() {
   const { colors } = useTheme();
   const styles = useStyles();
   const [mvpOpen, setMvpOpen] = useState(false);
+  const [finishedOpen, setFinishedOpen] = useState(false);
   const confirmed = state.players.filter((player) => player.attendance === "yes");
   const green = confirmed.filter((player) => state.assignments[player.id] === "green");
   const yellow = confirmed.filter((player) => state.assignments[player.id] === "yellow");
@@ -35,7 +37,8 @@ export default function MatchScreen() {
     <View style={[styles.statsCard, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}>{assigned.length === 0 ? <Text style={[styles.helper, { color: colors.muted }]}>Asigna jugadores a un equipo para registrar sus estadísticas.</Text> : assigned.map((player) => { const stat = state.stats[player.id] ?? { goals: 0, assists: 0 }; return <View key={player.id} style={styles.statRow}><View style={styles.statName}><Text style={[styles.assignPlayer, { color: colors.onSurface }]}>{player.name}</Text><Text style={[styles.assignPosition, { color: colors.muted }]}>{state.assignments[player.id] === "green" ? "Equipo Verde" : "Equipo Amarillo"}</Text></View><StatControl disabled={!isAdmin} icon="soccer" label="Goles" value={stat.goals} onMinus={() => setStat(player.id, "goals", -1)} onPlus={() => setStat(player.id, "goals", 1)} minusTestID={`stat-goals-minus-${player.id}`} plusTestID={`stat-goals-plus-${player.id}`} colors={colors} styles={styles} /><StatControl disabled={!isAdmin} icon="shoe-print" label="Asist." value={stat.assists} onMinus={() => setStat(player.id, "assists", -1)} onPlus={() => setStat(player.id, "assists", 1)} minusTestID={`stat-assists-minus-${player.id}`} plusTestID={`stat-assists-plus-${player.id}`} colors={colors} styles={styles} /></View>; })}</View>
     <SectionTitle title="MVP del partido" action="+1 TROFEO" />
     <View style={[styles.mvpWrap, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}><Pressable testID="mvp-selector" disabled={!isAdmin || state.finalized} accessibilityRole="button" onPress={() => setMvpOpen((open) => !open)} style={[styles.mvpSelect, { backgroundColor: colors.surfaceTertiary, borderColor: colors.border, opacity: isAdmin ? 1 : 0.6 }]}><MaterialCommunityIcons name="trophy-outline" color={colors.brandSecondary} size={20} /><Text style={[styles.mvpValue, { color: mvp ? colors.onSurface : colors.muted }]}>{mvp?.name ?? "Seleccionar jugador"}</Text><MaterialCommunityIcons name={mvpOpen ? "chevron-up" : "chevron-down"} color={colors.muted} size={20} /></Pressable>{mvpOpen && isAdmin && !state.finalized ? <View style={[styles.mvpList, { borderColor: colors.border, backgroundColor: colors.surfaceTertiary }]}>{confirmed.map((player) => <Pressable testID={`mvp-option-${player.id}`} key={player.id} onPress={() => { setMvp(player.id); setMvpOpen(false); }} style={styles.mvpOption}><Text style={[styles.mvpOptionText, { color: colors.onSurface }]}>{player.name}</Text><Text style={[styles.assignPosition, { color: colors.muted }]}>#{player.number}</Text></Pressable>)}</View> : null}</View>
-    <PrimaryButton testID="finalize-match" label={!isAdmin ? "Solo admin puede finalizar" : state.finalized ? "Partido finalizado" : "Finalizar partido"} icon={state.finalized ? "check-decagram" : "flag-checkered"} disabled={!isAdmin || state.finalized || green.length === 0 || yellow.length === 0} onPress={() => { void finalizeMatch(); Alert.alert("Partido finalizado", "Los puntos y estadísticas ya están en la clasificación."); }} />
+    <PrimaryButton testID="finalize-match" label={!isAdmin ? "Solo admin puede finalizar" : state.finalized ? "Partido finalizado" : "Finalizar partido"} icon={state.finalized ? "check-decagram" : "flag-checkered"} disabled={!isAdmin || state.finalized || green.length === 0 || yellow.length === 0} onPress={() => { void finalizeMatch(); setFinishedOpen(true); }} />
+    <ConfirmDialog testID="match-finished-dialog" visible={finishedOpen} icon="check-decagram" title="Partido finalizado" message="Los puntos y estadísticas ya están en la clasificación." confirmLabel="Entendido" onClose={() => setFinishedOpen(false)} />
     {!state.finalized && (green.length === 0 || yellow.length === 0) ? <Text style={[styles.footerHint, { color: colors.muted }]}>Necesitas al menos un jugador en cada equipo.</Text> : null}
   </Screen>;
 }

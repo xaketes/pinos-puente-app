@@ -70,6 +70,13 @@ Una peña de fútbol sala necesita gestionar convocatorias, repartir equipos, re
 - La app conecta en vivo sin avisos de error.
 - Cuenta admin creada por el usuario (joseilloortega600@gmail.com); login verificado, pero falta asignar el rol `admin` en app_metadata (UPDATE pendiente en SQL Editor).
 
+### 2026-09-16 — E2E Supabase real superada (iteration_5)
+
+- Prueba completa contra el proyecto real: login admin, alta de 5 jugadores, convocatoria, asistencia, reparto, marcador 3-2, MVP, finalización, clasificación, historial y logout. 10/12 puntos superados.
+- Tiempo real verificado entre dos sesiones anónimas (la asistencia se actualiza sin recargar).
+- Sustituidos todos los `Alert.alert` por el modal multiplataforma `ConfirmDialog` (`src/components/confirm.tsx`): funcionaban en nativo pero eran no-op en la vista web.
+- Corregido `reset_season()` en `supabase/schema.sql`: `delete from public.matches where true;` (pg-safeupdate bloqueaba el DELETE sin WHERE). PENDIENTE: el usuario debe re-ejecutar ese bloque en su SQL Editor para que el reinicio funcione en su proyecto.
+
 ## Backlog priorizado
 
 ### P0 — Completado

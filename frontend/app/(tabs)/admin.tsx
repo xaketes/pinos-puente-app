@@ -1,7 +1,8 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useState } from "react";
-import { Alert, KeyboardAvoidingView, Platform, Pressable, Text, TextInput, View } from "react-native";
+import { KeyboardAvoidingView, Platform, Pressable, Text, TextInput, View } from "react-native";
 
+import { ConfirmDialog } from "@/src/components/confirm";
 import { EmptyState, Header, PrimaryButton, Screen, SectionTitle, sharedStyles } from "@/src/components/screen";
 import { type Position, useApp } from "@/src/store";
 import { makeStyles, useTheme } from "@/src/theme";
@@ -17,10 +18,11 @@ export default function AdminScreen() {
   const [position, setPosition] = useState<Position>("Ala");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [dialog, setDialog] = useState<{ title: string; message: string; confirmLabel?: string; destructive?: boolean; onConfirm?: () => void } | null>(null);
 
-  const add = () => { if (!name.trim() || !number.trim()) { Alert.alert("Faltan datos", "Escribe el nombre y el dorsal del jugador."); return; } void addPlayer(name.trim(), number.trim(), position); setName(""); setNumber(""); setPosition("Ala"); };
-  const login = () => { if (!email.trim() || !password) { Alert.alert("Faltan datos", "Escribe el email y la contraseña del administrador."); return; } void loginAdmin(email.trim(), password); };
-  const reset = () => Alert.alert("Reiniciar temporada", "Se borrarán partidos, puntos, goles, asistencias y MVP. La plantilla se conservará.", [{ text: "Cancelar", style: "cancel" }, { text: "Reiniciar", style: "destructive", onPress: () => { void resetSeason(); } }]);
+  const add = () => { if (!name.trim() || !number.trim()) { setDialog({ title: "Faltan datos", message: "Escribe el nombre y el dorsal del jugador." }); return; } void addPlayer(name.trim(), number.trim(), position); setName(""); setNumber(""); setPosition("Ala"); };
+  const login = () => { if (!email.trim() || !password) { setDialog({ title: "Faltan datos", message: "Escribe el email y la contraseña del administrador." }); return; } void loginAdmin(email.trim(), password); };
+  const reset = () => setDialog({ title: "Reiniciar temporada", message: "Se borrarán partidos, puntos, goles, asistencias y MVP. La plantilla se conservará.", confirmLabel: "Reiniciar", destructive: true, onConfirm: () => { void resetSeason(); } });
 
   return <Screen testID="admin-screen"><Header kicker="GESTIÓN DE PLANTILLA" title="Administración" subtitle="El equipo edita; la peña consulta en tiempo real." icon="account-group-outline" />
     {cloudStatus === "missing" ? <EmptyState icon="cloud-off-outline" title="Conecta Supabase" message="Añade la URL pública y la clave anon en las variables EXPO_PUBLIC_SUPABASE para activar la sincronización." /> : !isAdmin ? <LoginCard email={email} password={password} setEmail={setEmail} setPassword={setPassword} onLogin={login} colors={colors} styles={styles} /> : <>
@@ -36,8 +38,9 @@ export default function AdminScreen() {
       </KeyboardAvoidingView>
     </>}
     <SectionTitle title="Plantilla" action={`${state.players.length} JUGADORES`} />
-    {state.players.length === 0 ? <EmptyState icon="account-multiple-outline" title="Todavía no hay jugadores" message={isAdmin ? "Añade el primer jugador con el formulario de arriba." : "El administrador todavía no ha añadido jugadores."} /> : <View style={[styles.rosterCard, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}>{state.players.map((player) => <View key={player.id} style={styles.rosterRow}><View style={[styles.rosterNumber, { backgroundColor: colors.surfaceTertiary }]}><Text style={[styles.rosterNumberText, { color: colors.brandSecondary }]}>{player.number}</Text></View><View style={styles.rosterCopy}><Text style={[styles.rosterName, { color: colors.onSurface }]}>{player.name}</Text><Text style={[styles.rosterPosition, { color: colors.muted }]}>{player.position}</Text></View>{isAdmin ? <Pressable testID={`delete-player-${player.id}`} accessibilityRole="button" onPress={() => Alert.alert("Eliminar jugador", `¿Quieres quitar a ${player.name} de la plantilla?`, [{ text: "Cancelar", style: "cancel" }, { text: "Eliminar", style: "destructive", onPress: () => { void removePlayer(player.id); } }])} style={styles.deleteButton}><MaterialCommunityIcons name="trash-can-outline" size={20} color={colors.error} /></Pressable> : null}</View>)}</View>}
+    {state.players.length === 0 ? <EmptyState icon="account-multiple-outline" title="Todavía no hay jugadores" message={isAdmin ? "Añade el primer jugador con el formulario de arriba." : "El administrador todavía no ha añadido jugadores."} /> : <View style={[styles.rosterCard, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}>{state.players.map((player) => <View key={player.id} style={styles.rosterRow}><View style={[styles.rosterNumber, { backgroundColor: colors.surfaceTertiary }]}><Text style={[styles.rosterNumberText, { color: colors.brandSecondary }]}>{player.number}</Text></View><View style={styles.rosterCopy}><Text style={[styles.rosterName, { color: colors.onSurface }]}>{player.name}</Text><Text style={[styles.rosterPosition, { color: colors.muted }]}>{player.position}</Text></View>{isAdmin ? <Pressable testID={`delete-player-${player.id}`} accessibilityRole="button" onPress={() => setDialog({ title: "Eliminar jugador", message: `¿Quieres quitar a ${player.name} de la plantilla?`, confirmLabel: "Eliminar", destructive: true, onConfirm: () => { void removePlayer(player.id); } })} style={styles.deleteButton}><MaterialCommunityIcons name="trash-can-outline" size={20} color={colors.error} /></Pressable> : null}</View>)}</View>}
     {isAdmin ? <><SectionTitle title="Temporada" /><View style={[styles.resetCard, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}><View style={[styles.resetIcon, { backgroundColor: colors.surfaceTertiary }]}><MaterialCommunityIcons name="restart" size={22} color={colors.warning} /></View><View style={styles.resetCopy}><Text style={[styles.resetTitle, { color: colors.onSurface }]}>Reiniciar estadísticas</Text><Text style={[styles.resetText, { color: colors.muted }]}>Borra el historial cloud y conserva la plantilla.</Text></View><Pressable testID="reset-season" accessibilityRole="button" onPress={reset} style={[styles.resetButton, { borderColor: colors.warning }]}><Text style={{ color: colors.warning, fontWeight: "900", fontSize: 12 }}>REINICIAR</Text></Pressable></View></> : null}
+    <ConfirmDialog testID="admin-dialog" visible={dialog !== null} title={dialog?.title ?? ""} message={dialog?.message ?? ""} confirmLabel={dialog?.confirmLabel ?? "Entendido"} cancelLabel={dialog?.onConfirm ? "Cancelar" : undefined} destructive={dialog?.destructive ?? false} onConfirm={() => dialog?.onConfirm?.()} onClose={() => setDialog(null)} />
   </Screen>;
 }
 
