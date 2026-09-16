@@ -85,6 +85,13 @@ Una peña de fútbol sala necesita gestionar convocatorias, repartir equipos, re
 - `MatchHistory` amplía con `details` por jugador calculados en `applySnapshot`; sin nuevas consultas a Supabase.
 - Verificado E2E con datos sembrados vía API y capturas; datos de prueba eliminados después. Nota: quedan en la base 5 filas inactivas "Test Jugador" (active=false, no se muestran en la app); borrables con `delete from public.players where name like 'Test Jugador %';`.
 
+### 2026-09-16 — Edición de partidos finalizados
+
+- El admin puede corregir un partido desde su detalle de historial (botón lápiz, solo visible con sesión admin): fecha, hora, pabellón, marcador, MVP y goles/asistencias por jugador.
+- Nueva acción `updatePlayedMatch` en el store y `updateCloudPlayedMatch` en cloud.ts (update en `matches` + upsert en `match_player_stats`); la clasificación se recalcula sola porque deriva de los datos de los partidos jugados.
+- Nuevo componente `src/components/edit-match.tsx`; `MatchHistory` ahora incluye `time` para prellenar el formulario.
+- Verificado E2E con datos sembrados: cambios guardados en Supabase (REST confirmado) y reflejados en el detalle; datos de prueba eliminados.
+
 ## Backlog priorizado
 
 ### P0 — Completado

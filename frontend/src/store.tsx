@@ -13,6 +13,7 @@ import {
   saveCloudScore,
   saveCloudStat,
   subscribeCloud,
+  updateCloudPlayedMatch,
   type CloudSnapshot,
 } from "@/src/lib/cloud";
 import { supabaseConfigured } from "@/src/lib/supabase";
@@ -26,7 +27,8 @@ export type Player = { id: string; name: string; number: string; position: Posit
 export type MatchConfig = { date: string; time: string; venue: string };
 export type PlayerStats = { goals: number; assists: number };
 export type MatchPlayerDetail = { id: string; name: string; number: string; team: Team; goals: number; assists: number; mvp: boolean };
-export type MatchHistory = { id: string; date: string; venue: string; green: number; yellow: number; mvpName: string; participants: number; goals: number; assists: number; greenPlayers: string; yellowPlayers: string; details: MatchPlayerDetail[] };
+export type MatchHistory = { id: string; date: string; time: string; venue: string; green: number; yellow: number; mvpName: string; participants: number; goals: number; assists: number; greenPlayers: string; yellowPlayers: string; details: MatchPlayerDetail[] };
+export type PlayedMatchEdit = { date: string; time: string; venue: string; green: number; yellow: number; mvpId: string; rows: { player_id: string; team: Team; goals: number; assists: number }[] };
 export type AppState = { players: Player[]; match: MatchConfig; upcomingMatchId: string; assignments: Record<string, Team>; scoreGreen: number; scoreYellow: number; stats: Record<string, PlayerStats>; mvpId: string; finalized: boolean; history: MatchHistory[] };
 
 type CloudStatus = "loading" | "ready" | "missing" | "error";
@@ -49,6 +51,7 @@ type Store = {
   setStat: (id: string, field: keyof PlayerStats, delta: number) => void;
   setMvp: (id: string) => void;
   finalizeMatch: () => Promise<void>;
+  updatePlayedMatch: (id: string, input: PlayedMatchEdit) => Promise<boolean>;
   prepareNextMatch: () => void;
   resetSeason: () => Promise<void>;
 };
@@ -85,7 +88,7 @@ export function AppProvider({ children }: PropsWithChildren) {
     const stats: Record<string, PlayerStats> = {};
     if (upcoming) snapshot.stats.filter((stat) => stat.match_id === upcoming.id).forEach((stat) => { assignments[stat.player_id] = stat.team; stats[stat.player_id] = { goals: stat.goals, assists: stat.assists }; });
     const players = activePlayers.map((player) => ({ ...player, attendance: (attendance.get(player.id) ?? "pending") as Attendance, ...(totals.get(player.id) ?? { points: 0, matches: 0, goals: 0, assists: 0, mvps: 0 }) }));
-    const history = played.map((match) => { const rows = snapshot.stats.filter((stat) => stat.match_id === match.id); return { id: match.id, date: formatDate(match.played_at), venue: match.location, green: match.home_score, yellow: match.away_score, mvpName: match.mvp_player_id ? playerNames.get(match.mvp_player_id) ?? "Sin MVP" : "Sin MVP", participants: rows.length, goals: rows.reduce((total, row) => total + row.goals, 0), assists: rows.reduce((total, row) => total + row.assists, 0), greenPlayers: rows.filter((row) => row.team === "green").map((row) => playerNames.get(row.player_id) ?? "Jugador").join(", ") || "—", yellowPlayers: rows.filter((row) => row.team === "yellow").map((row) => playerNames.get(row.player_id) ?? "Jugador").join(", ") || "—", details: rows.map((row) => ({ id: row.player_id, name: playerNames.get(row.player_id) ?? "Jugador", number: playerNumbers.get(row.player_id) ?? "", team: row.team, goals: row.goals, assists: row.assists, mvp: match.mvp_player_id === row.player_id })) }; });
+    const history = played.map((match) => { const rows = snapshot.stats.filter((stat) => stat.match_id === match.id); return { id: match.id, date: formatDate(match.played_at), time: formatTime(match.played_at), venue: match.location, green: match.home_score, yellow: match.away_score, mvpName: match.mvp_player_id ? playerNames.get(match.mvp_player_id) ?? "Sin MVP" : "Sin MVP", participants: rows.length, goals: rows.reduce((total, row) => total + row.goals, 0), assists: rows.reduce((total, row) => total + row.assists, 0), greenPlayers: rows.filter((row) => row.team === "green").map((row) => playerNames.get(row.player_id) ?? "Jugador").join(", ") || "—", yellowPlayers: rows.filter((row) => row.team === "yellow").map((row) => playerNames.get(row.player_id) ?? "Jugador").join(", ") || "—", details: rows.map((row) => ({ id: row.player_id, name: playerNames.get(row.player_id) ?? "Jugador", number: playerNumbers.get(row.player_id) ?? "", team: row.team, goals: row.goals, assists: row.assists, mvp: match.mvp_player_id === row.player_id })) }; });
     setState({ players, match: upcoming ? { date: formatDate(upcoming.played_at), time: formatTime(upcoming.played_at), venue: upcoming.location } : { date: "", time: "", venue: "" }, upcomingMatchId: upcoming?.id ?? "", assignments, scoreGreen: upcoming?.home_score ?? 0, scoreYellow: upcoming?.away_score ?? 0, stats, mvpId: upcoming?.mvp_player_id ?? "", finalized: false, history });
     setIsAdmin(snapshot.isAdmin);
     setCloudStatus("ready");
@@ -145,9 +148,14 @@ export function AppProvider({ children }: PropsWithChildren) {
     if (isAdmin && state.upcomingMatchId) void saveCloudMvp(state.upcomingMatchId, id).catch((error) => setSyncError(error instanceof Error ? error.message : "No se pudo guardar el MVP"));
   }, [isAdmin, state.upcomingMatchId]);
   const finalizeMatch = useCallback(() => adminAction(async () => { if (!state.upcomingMatchId) throw new Error("Guarda primero el próximo partido"); await finalizeCloudMatch(state.upcomingMatchId, state.scoreGreen, state.scoreYellow, state.mvpId, state.assignments, state.stats); }), [adminAction, state.assignments, state.mvpId, state.scoreGreen, state.scoreYellow, state.stats, state.upcomingMatchId]);
+  const updatePlayedMatch = useCallback(async (id: string, input: PlayedMatchEdit) => {
+    if (!isAdmin) { setSyncError("Solo el administrador puede editar estos datos."); return false; }
+    try { setSyncError(""); await updateCloudPlayedMatch(id, input); await refresh(); return true; }
+    catch (error) { setSyncError(error instanceof Error ? error.message : "No se pudo guardar el cambio"); return false; }
+  }, [isAdmin, refresh]);
   const prepareNextMatch = useCallback(() => setState((current) => ({ ...current, match: { date: "", time: "", venue: "" }, upcomingMatchId: "", assignments: {}, scoreGreen: 0, scoreYellow: 0, stats: {}, mvpId: "", finalized: false, players: current.players.map((player) => ({ ...player, attendance: "pending" })) })), []);
   const resetSeason = useCallback(() => adminAction(resetCloudSeason), [adminAction]);
-  const value = useMemo(() => ({ state, hydrated, cloudStatus, syncError, isAdmin, refresh, loginAdmin, logoutAdmin, addPlayer, removePlayer, setAttendance, setMatch, saveMatch, setAssignment, setScore, setStat, setMvp, finalizeMatch, prepareNextMatch, resetSeason }), [state, hydrated, cloudStatus, syncError, isAdmin, refresh, loginAdmin, logoutAdmin, addPlayer, removePlayer, setAttendance, setMatch, saveMatch, setAssignment, setScore, setStat, setMvp, finalizeMatch, prepareNextMatch, resetSeason]);
+  const value = useMemo(() => ({ state, hydrated, cloudStatus, syncError, isAdmin, refresh, loginAdmin, logoutAdmin, addPlayer, removePlayer, setAttendance, setMatch, saveMatch, setAssignment, setScore, setStat, setMvp, finalizeMatch, updatePlayedMatch, prepareNextMatch, resetSeason }), [state, hydrated, cloudStatus, syncError, isAdmin, refresh, loginAdmin, logoutAdmin, addPlayer, removePlayer, setAttendance, setMatch, saveMatch, setAssignment, setScore, setStat, setMvp, finalizeMatch, updatePlayedMatch, prepareNextMatch, resetSeason]);
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
 }
 

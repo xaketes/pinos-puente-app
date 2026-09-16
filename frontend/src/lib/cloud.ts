@@ -1,5 +1,5 @@
 import { getSupabase } from "@/src/lib/supabase";
-import type { Attendance, MatchConfig, PlayerStats, Position, Team } from "@/src/store";
+import type { Attendance, MatchConfig, PlayedMatchEdit, PlayerStats, Position, Team } from "@/src/store";
 
 export type CloudPlayer = { id: string; name: string; number: string; position: Position; active: boolean };
 export type CloudMatch = { id: string; played_at: string; location: string; home_score: number; away_score: number; status: "scheduled" | "played" | "cancelled"; mvp_player_id: string | null };
@@ -110,6 +110,15 @@ export async function finalizeCloudMatch(id: string, green: number, yellow: numb
 export async function resetCloudSeason() {
   const result = await getSupabase().rpc("reset_season");
   if (result.error) throw result.error;
+}
+
+export async function updateCloudPlayedMatch(id: string, input: PlayedMatchEdit) {
+  const result = await getSupabase().from("matches").update({ played_at: toIso(input.date, input.time), location: input.venue, home_score: input.green, away_score: input.yellow, mvp_player_id: input.mvpId || null }).eq("id", id);
+  if (result.error) throw result.error;
+  if (input.rows.length) {
+    const statsResult = await getSupabase().from("match_player_stats").upsert(input.rows.map((row) => ({ match_id: id, player_id: row.player_id, team: row.team, goals: row.goals, assists: row.assists })));
+    if (statsResult.error) throw statsResult.error;
+  }
 }
 
 export function subscribeCloud(onChange: () => void) {

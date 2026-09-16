@@ -1,7 +1,9 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { useState, type ReactNode } from "react";
 import { Pressable, Text, View } from "react-native";
 
+import { EditMatchForm } from "@/src/components/edit-match";
 import { EmptyState, Screen, SectionTitle } from "@/src/components/screen";
 import { type MatchPlayerDetail, type Team, useApp } from "@/src/store";
 import { makeStyles, useTheme } from "@/src/theme";
@@ -9,9 +11,10 @@ import { makeStyles, useTheme } from "@/src/theme";
 export default function HistoryDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { state, hydrated } = useApp();
+  const { state, hydrated, isAdmin } = useApp();
   const { colors } = useTheme();
   const styles = useStyles();
+  const [editing, setEditing] = useState(false);
   const match = state.history.find((item) => item.id === id);
 
   if (!hydrated) return <Screen scroll={false}><View style={styles.center}><MaterialCommunityIcons name="soccer" color={colors.brandPrimary} size={36} /><Text style={[styles.loading, { color: colors.muted }]}>Cargando el partido…</Text></View></Screen>;
@@ -21,12 +24,17 @@ export default function HistoryDetailScreen() {
     <EmptyState icon="cloud-search-outline" title="Partido no encontrado" message="Este partido ya no está en el historial de la temporada." />
   </Screen>;
 
+  if (editing) return <Screen testID="history-detail-screen">
+    <BackRow onBack={() => setEditing(false)} colors={colors} styles={styles} />
+    <EditMatchForm match={match} onDone={() => setEditing(false)} />
+  </Screen>;
+
   const winner: Team | null = match.green === match.yellow ? null : match.green > match.yellow ? "green" : "yellow";
   const greenPlayers = match.details.filter((detail) => detail.team === "green");
   const yellowPlayers = match.details.filter((detail) => detail.team === "yellow");
 
   return <Screen testID="history-detail-screen">
-    <BackRow onBack={() => router.back()} colors={colors} styles={styles} />
+    <BackRow onBack={() => router.back()} colors={colors} styles={styles} action={isAdmin ? <Pressable testID="history-edit" accessibilityRole="button" onPress={() => setEditing(true)} style={[styles.backButton, { backgroundColor: colors.surfaceTertiary }]}><MaterialCommunityIcons name="pencil-outline" size={19} color={colors.onSurface} /></Pressable> : null} />
     <View style={[styles.scoreCard, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}>
       <Text style={[styles.dateText, { color: colors.muted }]}>{match.date}{match.venue ? ` · ${match.venue}` : ""}</Text>
       <View style={styles.scoreRow}>
@@ -45,8 +53,8 @@ export default function HistoryDetailScreen() {
   </Screen>;
 }
 
-function BackRow({ onBack, colors, styles }: { onBack: () => void; colors: ReturnType<typeof useTheme>["colors"]; styles: ReturnType<typeof useStyles> }) {
-  return <View style={styles.backRow}><Pressable testID="history-back" accessibilityRole="button" onPress={onBack} style={[styles.backButton, { backgroundColor: colors.surfaceTertiary }]}><MaterialCommunityIcons name="arrow-left" size={20} color={colors.onSurface} /></Pressable><Text style={[styles.backTitle, { color: colors.onSurface }]}>Detalle del partido</Text></View>;
+function BackRow({ onBack, colors, styles, action }: { onBack: () => void; colors: ReturnType<typeof useTheme>["colors"]; styles: ReturnType<typeof useStyles>; action?: ReactNode }) {
+  return <View style={styles.backRow}><Pressable testID="history-back" accessibilityRole="button" onPress={onBack} style={[styles.backButton, { backgroundColor: colors.surfaceTertiary }]}><MaterialCommunityIcons name="arrow-left" size={20} color={colors.onSurface} /></Pressable><Text style={[styles.backTitle, { color: colors.onSurface }]}>Detalle del partido</Text>{action}</View>;
 }
 
 function TeamSection({ title, accent, players, colors, styles, testID }: { title: string; accent: string; players: MatchPlayerDetail[]; colors: ReturnType<typeof useTheme>["colors"]; styles: ReturnType<typeof useStyles>; testID: string }) {
@@ -68,7 +76,7 @@ const useStyles = makeStyles(() => ({
   loading: { fontSize: 15 },
   backRow: { flexDirection: "row", alignItems: "center", gap: 12, marginHorizontal: 18, marginBottom: 20 },
   backButton: { width: 44, height: 44, borderRadius: 13, alignItems: "center", justifyContent: "center" },
-  backTitle: { fontSize: 22, fontWeight: "900", letterSpacing: -0.4 },
+  backTitle: { flex: 1, fontSize: 22, fontWeight: "900", letterSpacing: -0.4 },
   scoreCard: { marginHorizontal: 18, borderRadius: 18, borderWidth: 1, padding: 18, alignItems: "center", marginBottom: 14 },
   dateText: { fontSize: 12, fontWeight: "800", letterSpacing: 0.6, textTransform: "uppercase" },
   scoreRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-around", alignSelf: "stretch", marginTop: 12 },
