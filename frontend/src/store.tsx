@@ -84,7 +84,7 @@ export function AppProvider({ children }: PropsWithChildren) {
   const setMatch = useCallback((patch: Partial<MatchConfig>) => update((current) => ({ ...current, match: { ...current.match, ...patch } })), [update]);
   const setAssignment = useCallback((id: string, team: Team) => update((current) => ({ ...current, assignments: { ...current.assignments, [id]: team } })), [update]);
   const setScore = useCallback((team: Team, delta: number) => update((current) => team === "green" ? { ...current, scoreGreen: Math.max(0, current.scoreGreen + delta) } : { ...current, scoreYellow: Math.max(0, current.scoreYellow + delta) }), [update]);
-  const setStat = useCallback((id: string, field: keyof PlayerStats, delta: number) => update((current) => ({ ...current, stats: { ...current.stats, [id]: { goals: Math.max(0, current.stats[id]?.goals ?? 0 + (field === "goals" ? delta : 0)), assists: Math.max(0, current.stats[id]?.assists ?? 0 + (field === "assists" ? delta : 0)) } } })), [update]);
+  const setStat = useCallback((id: string, field: keyof PlayerStats, delta: number) => update((current) => ({ ...current, stats: { ...current.stats, [id]: { goals: Math.max(0, (current.stats[id]?.goals ?? 0) + (field === "goals" ? delta : 0)), assists: Math.max(0, (current.stats[id]?.assists ?? 0) + (field === "assists" ? delta : 0)) } } })), [update]);
   const setMvp = useCallback((id: string) => update((current) => ({ ...current, mvpId: id })), [update]);
   const finalizeMatch = useCallback(() => update((current) => {
     if (current.finalized) return current;

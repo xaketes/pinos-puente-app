@@ -32,9 +32,9 @@ export function EmptyState({ icon, title, message }: { icon: keyof typeof Materi
   return <View style={[styles.empty, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}><MaterialCommunityIcons name={icon} size={34} color={colors.brandPrimary} /><Text style={[styles.emptyTitle, { color: colors.onSurface }]}>{title}</Text><Text style={[styles.emptyMessage, { color: colors.muted }]}>{message}</Text></View>;
 }
 
-export function PrimaryButton({ label, onPress, disabled = false, icon }: { label: string; onPress: () => void; disabled?: boolean; icon?: keyof typeof MaterialCommunityIcons.glyphMap }) {
+export function PrimaryButton({ label, onPress, disabled = false, icon, testID }: { label: string; onPress: () => void; disabled?: boolean; icon?: keyof typeof MaterialCommunityIcons.glyphMap; testID?: string }) {
   const { colors } = useTheme();
-  return <Pressable accessibilityRole="button" disabled={disabled} onPress={onPress} style={({ pressed }) => [styles.primaryButton, { backgroundColor: disabled ? colors.surfaceTertiary : colors.brandPrimary }, pressed && !disabled && styles.pressed]}>{icon ? <MaterialCommunityIcons name={icon} size={19} color={disabled ? colors.muted : colors.onBrandPrimary} /> : null}<Text style={[styles.primaryText, { color: disabled ? colors.muted : colors.onBrandPrimary }]}>{label}</Text></Pressable>;
+  return <Pressable testID={testID} accessibilityRole="button" disabled={disabled} onPress={onPress} style={({ pressed }) => [styles.primaryButton, { backgroundColor: disabled ? colors.surfaceTertiary : colors.brandPrimary }, pressed && !disabled && styles.pressed]}>{icon ? <MaterialCommunityIcons name={icon} size={19} color={disabled ? colors.muted : colors.onBrandPrimary} /> : null}<Text style={[styles.primaryText, { color: disabled ? colors.muted : colors.onBrandPrimary }]}>{label}</Text></Pressable>;
 }
 
 export const sharedStyles = StyleSheet.create({
