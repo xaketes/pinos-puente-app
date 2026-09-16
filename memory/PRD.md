@@ -77,6 +77,14 @@ Una peña de fútbol sala necesita gestionar convocatorias, repartir equipos, re
 - Sustituidos todos los `Alert.alert` por el modal multiplataforma `ConfirmDialog` (`src/components/confirm.tsx`): funcionaban en nativo pero eran no-op en la vista web.
 - Corregido `reset_season()` en `supabase/schema.sql`: `delete from public.matches where true;` (pg-safeupdate bloqueaba el DELETE sin WHERE). PENDIENTE: el usuario debe re-ejecutar ese bloque en su SQL Editor para que el reinicio funcione en su proyecto.
 
+### 2026-09-16 — Reinicio activado y detalle de historial
+
+- Verificado `reset_season()` en el proyecto real tras el SQL corregido por el usuario: el reinicio de temporada funciona.
+- Nueva pantalla `app/history/[id].tsx`: detalle de cada partido finalizado con marcador, ganador/empate, MVP y alineaciones Verde/Amarillo con goles y asistencias por jugador.
+- El historial de Clasificación ahora navega al detalle (filas pulsables con chevron, testID `history-item-<id>`).
+- `MatchHistory` amplía con `details` por jugador calculados en `applySnapshot`; sin nuevas consultas a Supabase.
+- Verificado E2E con datos sembrados vía API y capturas; datos de prueba eliminados después. Nota: quedan en la base 5 filas inactivas "Test Jugador" (active=false, no se muestran en la app); borrables con `delete from public.players where name like 'Test Jugador %';`.
+
 ## Backlog priorizado
 
 ### P0 — Completado

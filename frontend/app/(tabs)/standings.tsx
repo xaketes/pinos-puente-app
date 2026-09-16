@@ -1,5 +1,6 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { ScrollView, Text, View } from "react-native";
+import { useRouter } from "expo-router";
+import { Pressable, ScrollView, Text, View } from "react-native";
 
 import { EmptyState, Header, Screen, SectionTitle } from "@/src/components/screen";
 import { useApp } from "@/src/store";
@@ -7,6 +8,7 @@ import { makeStyles, useTheme } from "@/src/theme";
 
 export default function StandingsScreen() {
   const { state, hydrated } = useApp();
+  const router = useRouter();
   const { colors } = useTheme();
   const styles = useStyles();
   const players = [...state.players].sort((a, b) => b.points - a.points || b.mvps - a.mvps || b.goals - a.goals);
@@ -21,7 +23,7 @@ export default function StandingsScreen() {
       </View></ScrollView>
       <Text style={[styles.tableHint, { color: colors.muted }]}>Pts = victorias · PJ = partidos jugados · MVP = trofeos</Text>
       <SectionTitle title="Historial de partidos" action={`${state.history.length} JUGADOS`} />
-      {state.history.length === 0 ? <Text style={[styles.tableHint, { color: colors.muted }]}>Todavía no hay partidos finalizados.</Text> : <View style={[styles.historyCard, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}>{state.history.map((match) => <View key={match.id} style={[styles.historyRow, { borderBottomColor: colors.divider }]}><View style={styles.historyCopy}><Text style={[styles.historyDate, { color: colors.brandPrimary }]}>{match.date} · {match.venue || "Sin pabellón"}</Text><Text style={[styles.historyTeams, { color: colors.onSurfaceSecondary }]}>Verde: {match.greenPlayers || "—"}</Text><Text style={[styles.historyTeams, { color: colors.onSurfaceSecondary }]}>Amarillo: {match.yellowPlayers || "—"}</Text><Text style={[styles.historyMvp, { color: colors.muted }]}><MaterialCommunityIcons name="trophy-outline" size={13} color={colors.brandSecondary} /> MVP: {match.mvpName} · {match.participants} jugadores · {match.goals} goles · {match.assists} asistencias</Text></View><Text style={[styles.historyScore, { color: colors.onSurface }]}>{match.green} - {match.yellow}</Text></View>)}</View>}
+      {state.history.length === 0 ? <Text style={[styles.tableHint, { color: colors.muted }]}>Todavía no hay partidos finalizados.</Text> : <View style={[styles.historyCard, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}>{state.history.map((match) => <Pressable testID={`history-item-${match.id}`} accessibilityRole="button" key={match.id} onPress={() => router.push(`/history/${match.id}`)} style={({ pressed }) => [styles.historyRow, { borderBottomColor: colors.divider }, pressed && { opacity: 0.75 }]}><View style={styles.historyCopy}><Text style={[styles.historyDate, { color: colors.brandPrimary }]}>{match.date} · {match.venue || "Sin pabellón"}</Text><Text style={[styles.historyTeams, { color: colors.onSurfaceSecondary }]}>Verde: {match.greenPlayers || "—"}</Text><Text style={[styles.historyTeams, { color: colors.onSurfaceSecondary }]}>Amarillo: {match.yellowPlayers || "—"}</Text><Text style={[styles.historyMvp, { color: colors.muted }]}><MaterialCommunityIcons name="trophy-outline" size={13} color={colors.brandSecondary} /> MVP: {match.mvpName} · {match.participants} jugadores · {match.goals} goles · {match.assists} asistencias</Text></View><Text style={[styles.historyScore, { color: colors.onSurface }]}>{match.green} - {match.yellow}</Text><MaterialCommunityIcons name="chevron-right" size={20} color={colors.muted} /></Pressable>)}</View>}
     </>}
   </Screen>;
 }
