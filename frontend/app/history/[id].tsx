@@ -5,7 +5,7 @@ import { Pressable, Text, View } from "react-native";
 
 import { ConfirmDialog } from "@/src/components/confirm";
 import { EditMatchForm } from "@/src/components/edit-match";
-import { EmptyState, Screen, SectionTitle } from "@/src/components/screen";
+import { EmptyState, Screen } from "@/src/components/screen";
 import { type MatchPlayerDetail, type Team, useApp } from "@/src/store";
 import { makeStyles, useTheme } from "@/src/theme";
 
@@ -54,7 +54,7 @@ export default function HistoryDetailScreen() {
     </View>
     <TeamSection title="Equipo Verde" accent={colors.brandPrimary} players={greenPlayers} colors={colors} styles={styles} testID="history-green-team" />
     <TeamSection title="Equipo Amarillo" accent={colors.brandSecondary} players={yellowPlayers} colors={colors} styles={styles} testID="history-yellow-team" />
-    {isAdmin ? <View style={styles.dangerZone}><Pressable testID="history-delete" accessibilityRole="button" onPress={() => setDeleteOpen(true)} style={[styles.deleteMatchButton, { borderColor: colors.error }]}><MaterialCommunityIcons name="trash-can-outline" size={18} color={colors.error} /><Text style={[styles.deleteMatchText, { color: colors.error }]}>Eliminar partido del historial</Text></Pressable></View> : null}
+    {isAdmin ? <View style={styles.dangerZone}><Pressable testID="history-delete" accessibilityRole="button" onPress={() => setDeleteOpen(true)} style={[styles.deleteMatchButton, { borderColor: colors.error }]}><MaterialCommunityIcons name="trash-can-outline" size={18} color={colors.error} /><Text style={[styles.deleteMatchText, { color: colors.error }]}>Eliminar partido del historial</Text></Pressable></View> : <View style={[styles.adminHintCard, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}><MaterialCommunityIcons name="lock-outline" size={16} color={colors.muted} /><Text style={[styles.adminHint, { color: colors.muted }]}>Para editar o eliminar este partido, entra como administrador en la pestaña Admin.</Text></View>}
     <ConfirmDialog testID="history-delete-dialog" visible={deleteOpen} icon="trash-can-outline" title="Eliminar partido" message="Se borrará el partido con sus goles, asistencias y puntos de la clasificación. Esta acción no se puede deshacer." confirmLabel="Eliminar" cancelLabel="Cancelar" destructive onConfirm={() => { void remove(); }} onClose={() => setDeleteOpen(false)} />
   </Screen>;
 }
@@ -114,4 +114,6 @@ const useStyles = makeStyles(() => ({
   dangerZone: { marginHorizontal: 18, marginTop: 20 },
   deleteMatchButton: { minHeight: 48, borderRadius: 12, borderWidth: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
   deleteMatchText: { fontSize: 13, fontWeight: "900" },
+  adminHintCard: { marginHorizontal: 18, marginTop: 20, borderRadius: 12, borderWidth: 1, padding: 13, flexDirection: "row", alignItems: "center", gap: 9 },
+  adminHint: { flex: 1, fontSize: 12, lineHeight: 17 },
 }));

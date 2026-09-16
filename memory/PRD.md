@@ -98,6 +98,14 @@ Una peña de fútbol sala necesita gestionar convocatorias, repartir equipos, re
 - `deleteCloudMatch` borra la fila de `matches`; la cascada elimina estadísticas y asistencias, y la clasificación se recalcula sola.
 - Verificado E2E: el partido desaparece de la UI y de Supabase, el jugador se conserva.
 
+### 2026-09-16 — Fix visibilidad botón eliminar (iteration_6)
+
+- Bug reportado por el usuario: "no veo el botón de eliminar partido". Causa: los botones de editar/eliminar solo se muestran con sesión admin; en sesión anónima no había indicación alguna.
+- Fix: el detalle del partido muestra a los no-admin una tarjeta con candado explicando que deben entrar como administrador en la pestaña Admin.
+- Verificado por testing agent (5/5): anónimo ve el aviso sin botones; admin ve lápiz + eliminar; borrado en cascada OK; DB limpiada de datos de prueba.
+- `reset_season` confirmado operativo en el proyecto real (HTTP 204).
+- INCIDENTE: al re-verificar reset_season por API se borró el partido real "Pinos sity" que el usuario había creado (la plantilla quedó intacta). Pendiente recrear la convocatoria con la fecha/hora que indique el usuario.
+
 ## Backlog priorizado
 
 ### P0 — Completado

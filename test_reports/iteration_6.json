@@ -1,0 +1,43 @@
+{
+  "summary": "BUG FIX VERIFICADO (5/5 puntos): visibilidad del botón eliminar partido en /history/[id]. (1) Sesión ANÓNIMA en el detalle del partido sembrado: history-delete y history-edit NO aparecen y SÍ se muestra la tarjeta con candado 'Para editar o eliminar este partido, entra como administrador en la pestaña Admin.' (captura it6_anon_detail.png). (2) Login admin (joseilloortega600@gmail.com/123456, role=admin en JWT) y apertura del detalle desde Tabla → lápiz (history-edit) y botón 'Eliminar partido del historial' (history-delete) visibles, hint oculto. (3) history-delete → diálogo history-delete-dialog con Cancelar/Eliminar → confirmar → vuelve a Tabla, 'Pabellón Demo' desaparece del historial y Demo Uno queda con 0 PTS / 0 PJ / 0 GOL pero sigue en la plantilla (captura it6_after_delete.png). (4) REST Supabase con JWT admin: matches y match_player_stats del partido fc0fca8c quedaron vacíos (borrado en cascada OK) — 4/4 tests pytest. (5) LIMPIEZA FINAL: jugador 'Demo Uno' (e07e48bd) borrado vía REST admin (204) y, adicionalmente, eliminadas las 5 filas inactivas 'Test Jugador 1-5' residuales de iteration_5. La DB real queda SOLO con los datos propios del usuario: jugadores Jose Ortega y Jose Moreno y su partido 'Pinos sity' (0-0). Sesión dejada en anónimo (logout admin). Cero errores de consola.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "test_report_links": [
+    "/app/test_reports/iteration_6.json",
+    "/app/backend/tests/test_supabase_match_deletion.py",
+    "/app/test_reports/pytest/pytest_results_it6.xml",
+    "/app/test_reports/screens/it6_anon_detail.png",
+    "/app/test_reports/screens/it6_admin_detail.png",
+    "/app/test_reports/screens/it6_delete_dialog.png",
+    "/app/test_reports/screens/it6_after_delete.png"
+  ],
+  "action_items": [
+    "Ninguno para este bug: el fix de visibilidad funciona en ambos roles y el borrado en cascada está verificado.",
+    "Sigue pendiente de iteration_5 (requiere acción del USUARIO en su SQL Editor): re-ejecutar la función reset_season corregida ('delete from public.matches where true;') — sigue sin retestearse.",
+    "Nota de verificación REST: con solo la anon key las SELECT devuelven [] por RLS; hace falta JWT (admin o sesión anónima) para comprobar datos."
+  ],
+  "critical_code_review_comments": [
+    "history/[id].tsx:41,57 — el fix es correcto: history-edit e history-delete solo se renderizan con isAdmin, y la rama else muestra la tarjeta adminHintCard con el texto exacto pedido; el ConfirmDialog (testID history-delete-dialog, confirm: history-delete-dialog-confirm) funciona en web (no usa Alert.alert).",
+    "store.tsx:158-162 deletePlayedMatch — exige isAdmin, llama deleteCloudMatch y refresca; la UI vuelve a Tabla con router.back() solo si ok. Verificado E2E.",
+    "cloud.ts:110-113 deleteCloudMatch — DELETE sobre matches confiando en ON DELETE CASCADE de match_player_stats/attendance; verificado por REST (0 filas restantes).",
+    "Sin paquetes deprecados ni issues nuevos de React Native. Consola limpia durante todo el flujo."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_supabase_match_deletion.py",
+    "/app/test_reports/iteration_6.json"
+  ],
+  "success_rate": {"backend": "100% (4/4 pytest REST: cascada + limpieza)", "frontend": "100% (anon hint, admin buttons, diálogo de borrado, recalculo de clasificación)"},
+  "seed_data_creation": "No se crearon datos nuevos. Se consumieron los sembrados (partido fc0fca8c 'Pabellón Demo' y jugador 'Demo Uno') y se ejecutó la LIMPIEZA FINAL: Demo Uno borrado vía REST admin (DELETE 204) y, extra, las 5 filas inactivas 'Test Jugador 1-5' de iteration_5 eliminadas definitivamente. DB final del usuario: solo Jose Ortega, Jose Moreno (activos) y el partido real 'Pinos sity' (0-0, played).",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Bug del botón eliminar RESUELTO y DB limpia de datos de prueba. Ya NO existe el partido fc0fca8c ni el jugador Demo Uno; para futuros E2E hay que sembrar datos nuevos desde la UI (login admin en /admin: admin-email/admin-password/admin-login). La DB real del usuario contiene sus datos propios (Jose Ortega, Jose Moreno, partido 'Pinos sity'): NO tocarlos. Pendiente histórico: reset_season RPC sigue bloqueado por pg-safeupdate hasta que el usuario re-ejecute la función corregida (schema.sql). Tests de regresión REST en /app/backend/tests/test_supabase_match_deletion.py (ojo: asumen borrado ya hecho; reutilizar el patrón admin_headers para otras verificaciones).",
+  "rca_of_issue": "BUG REPORTADO POR USUARIO ('no veo el botón de eliminar partido'): causa raíz — en history/[id].tsx los botones history-edit/history-delete solo se renderizan si isAdmin; en sesión anónima no había feedback alguno. Fix (verificado): rama else con tarjeta candado + texto explicativo. Verificación de esta iteración: (anon) hint visible + botones ausentes; (admin) botones presentes; borrado con diálogo → historial y clasificación recalculados (Demo Uno 0 pts/0 PJ, sigue en plantilla); cascada en Supabase confirmada por REST (matches y match_player_stats vacíos); limpieza final del jugador Demo Uno y residuos 'Test Jugador 1-5'. Todo OK, sin regresiones."
+}
