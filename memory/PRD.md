@@ -41,6 +41,16 @@ Una peña de fútbol sala necesita gestionar convocatorias, repartir equipos, re
 - Implementada clasificación horizontal responsive, ordenada por puntos y desempate por MVP/goles.
 - Verificado con lint, TypeScript, screenshot y prueba independiente completa; la segunda iteración alcanzó 100% frontend.
 
+### 2026-09-16 — Migración cloud preparada
+
+- Sustituido el estado de temporada en almacenamiento local por Supabase Postgres como fuente única de verdad.
+- Añadidos cliente Supabase Expo, sesión anónima para jugadores, login de administrador por email/contraseña y comprobación de `app_metadata.role = admin`.
+- Añadido esquema SQL con RLS para jugadores, partidos, estadísticas, asistencias, historial y RPC de reinicio.
+- Añadida sincronización Realtime para actualizar los cuatro apartados en todos los móviles.
+- Añadida interfaz de solo lectura para jugadores y controles de edición condicionados al rol administrador.
+- Añadido historial de partidos en Clasificación con fecha, pabellón, marcador y MVP.
+- La conexión real queda pendiente de que el usuario cree el proyecto Supabase y complete las variables públicas indicadas en `supabase/README.md`.
+
 ## Backlog priorizado
 
 ### P0 — Completado
@@ -48,10 +58,11 @@ Una peña de fútbol sala necesita gestionar convocatorias, repartir equipos, re
 - Flujo local completo de convocatoria → partido → clasificación.
 - Persistencia local y reinicio seguro.
 - UI móvil en español, accesible y usable con controles grandes.
+- Esquema cloud, RLS, autenticación anónima/admin y suscripciones Realtime preparados.
 
 ### P1 — Próximas mejoras
 
-- Historial de partidos finalizados con fecha, marcador, equipos y MVP.
+- Aplicar el SQL y las credenciales del proyecto Supabase para activar la sincronización real.
 - Edición de jugadores existentes (nombre, dorsal y posición).
 - Aviso visual de cambios guardados y recuperación ante datos locales corruptos.
 - Exportación/importación de la temporada para transferir datos entre dispositivos.
@@ -61,6 +72,7 @@ Una peña de fútbol sala necesita gestionar convocatorias, repartir equipos, re
 - Compartir convocatoria mediante enlace o mensaje.
 - Resumen anual con evolución de puntos y premios.
 - Sincronización opcional entre dispositivos con cuentas.
+- Identidad individual verificable para cada jugador, reemplazando la selección anónima por dispositivo.
 
 ## Siguientes tareas
 

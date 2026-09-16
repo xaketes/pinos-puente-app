@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 
 import { useTheme } from "@/src/theme";
 import { usesNativeTabs } from "@/src/navigation";
+import { useApp } from "@/src/store";
 
 export function Screen({ children, scroll = true, testID }: { children: ReactNode; scroll?: boolean; testID?: string }) {
   const insets = useSafeAreaInsets();
@@ -16,9 +17,10 @@ export function Screen({ children, scroll = true, testID }: { children: ReactNod
 
 export function Header({ kicker, title, subtitle, icon }: { kicker: string; title: string; subtitle: string; icon: keyof typeof MaterialCommunityIcons.glyphMap }) {
   const { colors } = useTheme();
+  const { cloudStatus, syncError } = useApp();
   return <View style={styles.header}>
     <View style={[styles.headerIcon, { backgroundColor: colors.brandTertiary }]}><MaterialCommunityIcons name={icon} size={24} color={colors.brandPrimary} /></View>
-    <View style={styles.headerCopy}><Text style={[styles.kicker, { color: colors.brandPrimary }]}>{kicker}</Text><Text style={[styles.title, { color: colors.onSurface }]}>{title}</Text><Text style={[styles.subtitle, { color: colors.muted }]}>{subtitle}</Text></View>
+    <View style={styles.headerCopy}><Text style={[styles.kicker, { color: colors.brandPrimary }]}>{kicker}</Text><Text style={[styles.title, { color: colors.onSurface }]}>{title}</Text><Text style={[styles.subtitle, { color: colors.muted }]}>{subtitle}</Text>{cloudStatus === "missing" ? <Text style={[styles.cloudHint, { color: colors.warning }]}>Configura Supabase para sincronizar</Text> : cloudStatus === "error" ? <Text style={[styles.cloudHint, { color: colors.error }]}>{syncError || "Sin conexión cloud"}</Text> : null}</View>
   </View>;
 }
 
@@ -51,6 +53,7 @@ const styles = StyleSheet.create({
   kicker: { fontSize: 11, fontWeight: "900", letterSpacing: 1.5, marginBottom: 3 },
   title: { fontSize: 30, fontWeight: "900", letterSpacing: -0.5 },
   subtitle: { fontSize: 14, lineHeight: 20, marginTop: 4 },
+  cloudHint: { fontSize: 11, lineHeight: 15, marginTop: 5, fontWeight: "800" },
   sectionTitle: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 18, marginBottom: 10, marginTop: 10 },
   sectionText: { fontSize: 18, fontWeight: "800" },
   sectionAction: { fontSize: 12, fontWeight: "700" },
