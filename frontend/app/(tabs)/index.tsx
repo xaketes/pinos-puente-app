@@ -1,5 +1,4 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { useEffect, useState } from "react";
 import { Pressable, Text, TextInput, View } from "react-native";
 
 import { EmptyState, Header, PrimaryButton, Screen, SectionTitle, sharedStyles } from "@/src/components/screen";
@@ -10,10 +9,7 @@ export default function ConvocatoriaScreen() {
   const { state, hydrated, isAdmin, setAttendance, setMatch, saveMatch, prepareNextMatch } = useApp();
   const { colors } = useTheme();
   const styles = useStyles();
-  const [date, setDate] = useState(state.match.date);
-  const [time, setTime] = useState(state.match.time);
-  const [venue, setVenue] = useState(state.match.venue);
-  useEffect(() => { setDate(state.match.date); setTime(state.match.time); setVenue(state.match.venue); }, [state.match.date, state.match.time, state.match.venue]);
+  const { date, time, venue } = state.match;
   const confirmed = state.players.filter((player) => player.attendance === "yes").length;
 
   if (!hydrated) return <Screen scroll={false}><View style={styles.center}><MaterialCommunityIcons name="soccer" color={colors.brandPrimary} size={36} /><Text style={styles.loading}>Cargando la plantilla…</Text></View></Screen>;
@@ -26,8 +22,8 @@ export default function ConvocatoriaScreen() {
     </View>
     <SectionTitle title="Próximo partido" action="SE GUARDA SOLO" />
     <View style={[sharedStyles.card, styles.matchCard, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}>
-      <View style={styles.fieldRow}><View style={styles.field}><Text style={[sharedStyles.fieldLabel, { color: colors.muted }]}>Fecha</Text><TextInput editable={isAdmin} testID="match-date" value={date} onChangeText={(value) => { setDate(value); setMatch({ date: value }); }} placeholder="DD / MM / AAAA" placeholderTextColor={colors.muted} style={[sharedStyles.input, { color: isAdmin ? colors.onSurface : colors.muted, backgroundColor: colors.surfaceTertiary, borderColor: colors.border }]} /></View><View style={styles.field}><Text style={[sharedStyles.fieldLabel, { color: colors.muted }]}>Hora</Text><TextInput editable={isAdmin} testID="match-time" value={time} onChangeText={(value) => { setTime(value); setMatch({ time: value }); }} placeholder="20:30" placeholderTextColor={colors.muted} style={[sharedStyles.input, { color: isAdmin ? colors.onSurface : colors.muted, backgroundColor: colors.surfaceTertiary, borderColor: colors.border }]} /></View></View>
-      <Text style={[sharedStyles.fieldLabel, { color: colors.muted }]}>Pabellón</Text><TextInput editable={isAdmin} testID="match-venue" value={venue} onChangeText={(value) => { setVenue(value); setMatch({ venue: value }); }} placeholder="Nombre del pabellón" placeholderTextColor={colors.muted} style={[sharedStyles.input, { color: isAdmin ? colors.onSurface : colors.muted, backgroundColor: colors.surfaceTertiary, borderColor: colors.border }]} />
+      <View style={styles.fieldRow}><View style={styles.field}><Text style={[sharedStyles.fieldLabel, { color: colors.muted }]}>Fecha</Text><TextInput editable={isAdmin} testID="match-date" value={date} onChangeText={(value) => setMatch({ date: value })} placeholder="DD / MM / AAAA" placeholderTextColor={colors.muted} style={[sharedStyles.input, { color: isAdmin ? colors.onSurface : colors.muted, backgroundColor: colors.surfaceTertiary, borderColor: colors.border }]} /></View><View style={styles.field}><Text style={[sharedStyles.fieldLabel, { color: colors.muted }]}>Hora</Text><TextInput editable={isAdmin} testID="match-time" value={time} onChangeText={(value) => setMatch({ time: value })} placeholder="20:30" placeholderTextColor={colors.muted} style={[sharedStyles.input, { color: isAdmin ? colors.onSurface : colors.muted, backgroundColor: colors.surfaceTertiary, borderColor: colors.border }]} /></View></View>
+      <Text style={[sharedStyles.fieldLabel, { color: colors.muted }]}>Pabellón</Text><TextInput editable={isAdmin} testID="match-venue" value={venue} onChangeText={(value) => setMatch({ venue: value })} placeholder="Nombre del pabellón" placeholderTextColor={colors.muted} style={[sharedStyles.input, { color: isAdmin ? colors.onSurface : colors.muted, backgroundColor: colors.surfaceTertiary, borderColor: colors.border }]} />
       {isAdmin ? <View style={styles.saveMatch}><PrimaryButton testID="save-match" label={state.upcomingMatchId ? "Guardar cambios" : "Crear próximo partido"} icon="cloud-upload-outline" onPress={() => { void saveMatch(); }} /> </View> : <Text style={[styles.readOnly, { color: colors.muted }]}>Solo el administrador puede editar los datos del partido.</Text>}
     </View>
     {state.finalized ? <View style={[styles.notice, { backgroundColor: colors.brandTertiary, borderColor: colors.borderStrong }]}><MaterialCommunityIcons name="check-decagram" size={20} color={colors.brandPrimary} /><View style={styles.noticeCopy}><Text style={[styles.noticeTitle, { color: colors.onSurface }]}>Partido finalizado</Text><Text style={[styles.noticeText, { color: colors.muted }]}>Las estadísticas ya están en la clasificación.</Text></View><Pressable onPress={prepareNextMatch} accessibilityRole="button"><Text style={[styles.noticeAction, { color: colors.brandPrimary }]}>Nuevo</Text></Pressable></View> : null}

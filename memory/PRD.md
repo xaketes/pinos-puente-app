@@ -51,6 +51,12 @@ Una peña de fútbol sala necesita gestionar convocatorias, repartir equipos, re
 - Añadido historial de partidos en Clasificación con fecha, pabellón, marcador y MVP.
 - La conexión real queda pendiente de que el usuario cree el proyecto Supabase y complete las variables públicas indicadas en `supabase/README.md`.
 
+### 2026-09-16 — Estabilización de hooks y QA
+
+- Corregidos los dos errores `react-hooks/set-state-in-effect`: los inputs de convocatoria ya no duplican estado local y la carga inicial se fusionó con la suscripción Realtime.
+- `eslint` y `tsc --noEmit` limpios; retest de regresión frontend 20/20 checks superados (reporte `/app/test_reports/iteration_4.json` regenerado).
+- Retirada de la UI la pista con la contraseña inicial del administrador.
+
 ## Backlog priorizado
 
 ### P0 — Completado
@@ -75,6 +81,7 @@ Una peña de fútbol sala necesita gestionar convocatorias, repartir equipos, re
 
 ## Siguientes tareas
 
-1. Validar con una plantilla real de la peña y ajustar etiquetas o posiciones si fuera necesario.
-2. Añadir historial de partidos antes de incorporar sincronización.
-3. Considerar exportación de datos para evitar pérdida al cambiar de dispositivo.
+1. Obtener del usuario `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY` y el email del administrador; configurar `frontend/.env` sin tocar las variables protegidas.
+2. Ejecutar `supabase/schema.sql` en el SQL Editor del proyecto y crear el usuario administrador en Supabase Auth con contraseña inicial segura.
+3. Validar RLS (sesión anónima vs admin) y Realtime entre dos dispositivos con el flujo completo: alta de jugador, asistencia, reparto, finalización e historial.
+4. Actualizar `/app/memory/test_credentials.md` con la cuenta admin real una vez creada.

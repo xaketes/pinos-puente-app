@@ -1,0 +1,39 @@
+{
+  "summary": "RETEST de regresión frontend tras corrección de react-hooks/set-state-in-effect: SUPERADO. eslint y tsc --noEmit pasan limpios. Las 4 pestañas (Convocatoria, Partido, Tabla, Admin) renderizan sin errores ni crashes en viewport móvil 375x667. Banner 'Configura Supabase para sincronizar' visible en todas las pantallas (componente Header compartido), contador 0/0, inputs fecha/hora/pabellón presentes pero NO editables (readonly) sin sesión admin, mensaje 'Solo el administrador puede editar los datos del partido.' visible, botón save-match oculto, empty states correctos en las 4 pestañas. CERO errores de consola/React/hooks en toda la navegación (los errores 'useState is not defined' en logs de expo son históricos de la iteración anterior, ya corregidos; el bundle más reciente corre limpio). Modo cloud-pendiente confirmado como comportamiento esperado (EXPO_PUBLIC_SUPABASE_URL/ANON_KEY vacías por diseño).",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "test_report_links": [
+    "/app/test_reports/iteration_4.json",
+    "/app/test_reports/screens/it5_convocatoria.png",
+    "/app/test_reports/screens/it5_match.png",
+    "/app/test_reports/screens/it5_standings.png",
+    "/app/test_reports/screens/it5_admin.png"
+  ],
+  "action_items": [
+    "Sin bloqueantes. Pendiente del usuario: aportar credenciales Supabase (EXPO_PUBLIC_SUPABASE_URL / EXPO_PUBLIC_SUPABASE_ANON_KEY) para probar sincronización real.",
+    "Arrastrado de iteración 3 (no retestable sin credenciales): revisar PK de attendance (match_id, player_id) vs upsert con user_id en cloud.ts:96 — dos sesiones anónimas pueden colisionar.",
+    "Menor: admin.tsx:45 muestra en UI la pista 'La contraseña inicial acordada es 1234' — eliminar antes de producción."
+  ],
+  "critical_code_review_comments": [
+    "store.tsx:60-61 inicializa hydrated=!supabaseConfigured y cloudStatus='missing' sin efecto: correcto, sin set-state-in-effect.",
+    "store.tsx:100-108 fusiona carga inicial dentro del efecto de suscripción Realtime (refresh en callback .then): correcto, eslint limpio.",
+    "index.tsx ya no duplica estado local de fecha/hora/pabellón; usa state.match del store directamente (línea 12).",
+    "Sin paquetes deprecados (expo-av, expo-barcode-scanner, expo-background-fetch ausentes).",
+    "Todos los elementos interactivos clave tienen testID; textos envueltos en Text; estilos vía StyleSheet/makeStyles; sin HTML/CSS."
+  ],
+  "updated_files": ["/app/test_reports/iteration_4.json"],
+  "success_rate": {"backend": "N/A (sin backend en uso; Supabase pendiente por diseño)", "frontend": "100% (20/20 checks)"},
+  "seed_data_creation": "No se creó seed data (modo cloud pendiente, sin credenciales).",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Preview https://torneo-verde.preview.emergentagent.com. EXPO_PUBLIC_SUPABASE_URL y ANON_KEY vacías: el modo 'cloud pendiente' es el estado esperado, NO un bug. Cuando el usuario aporte credenciales Supabase, retestar: login admin (admin-email/admin-password/admin-login), CRUD jugadores (player-name/player-number/add-player), guardar partido (save-match), asistencia (voy-/no-voy-), y la issue de PK attendance heredada de iteración 3. eslint y tsc pasan limpios.",
+  "rca_of_issue": "Bug original (it.4): react-hooks/set-state-in-effect en index.tsx:16 (useState+useEffect duplicando fecha/hora/pabellón) y store.tsx:100 (setState inicial fuera del efecto). Causa: estado local derivado del store sincronizado vía efecto. Mitigación aplicada por E1: index.tsx consume state.match directamente; store.tsx inicializa hydrated=!supabaseConfigured y mueve refresh dentro del efecto de suscripción. Verificado: eslint/tsc limpios, 0 errores de consola en las 4 pestañas, inputs readonly funcionales."
+}

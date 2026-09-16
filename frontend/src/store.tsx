@@ -57,7 +57,7 @@ const StoreContext = createContext<Store | null>(null);
 
 export function AppProvider({ children }: PropsWithChildren) {
   const [state, setState] = useState<AppState>(initialState);
-  const [hydrated, setHydrated] = useState(false);
+  const [hydrated, setHydrated] = useState(!supabaseConfigured);
   const [cloudStatus, setCloudStatus] = useState<CloudStatus>(supabaseConfigured ? "loading" : "missing");
   const [syncError, setSyncError] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
@@ -91,17 +91,19 @@ export function AppProvider({ children }: PropsWithChildren) {
   }, []);
 
   const refresh = useCallback(async () => {
-    if (!supabaseConfigured) { setHydrated(true); return; }
+    if (!supabaseConfigured) return;
     try { await ensureSession(); applySnapshot(await loadSnapshot()); }
     catch (error) { setCloudStatus("error"); setSyncError(error instanceof Error ? error.message : "No se pudo sincronizar con Supabase"); }
     finally { setHydrated(true); }
   }, [applySnapshot]);
 
-  useEffect(() => { void refresh(); }, [refresh]);
   useEffect(() => {
     if (!supabaseConfigured) return undefined;
     let unsubscribe: (() => void) | undefined;
-    void ensureSession().then(() => { unsubscribe = subscribeCloud(() => { void refresh(); }); }).catch(() => undefined);
+    void ensureSession().then(() => {
+      void refresh();
+      unsubscribe = subscribeCloud(() => { void refresh(); });
+    }).catch(() => undefined);
     return () => unsubscribe?.();
   }, [refresh]);
 
