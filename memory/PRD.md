@@ -64,6 +64,12 @@ Una peña de fútbol sala necesita gestionar convocatorias, repartir equipos, re
 - Verificado contra el proyecto real: faltan ejecutar el SQL del esquema y activar "Anonymous sign-ins" en Authentication → Providers.
 - Entregado al usuario el SQL definitivo (tablas, RLS, Realtime, RPC de reinicio) y las instrucciones para crear el usuario administrador con rol `admin`.
 
+### 2026-09-16 — Supabase en vivo
+
+- Usuario ejecutó el esquema SQL y activó "Anonymous sign-ins": verificado por API que las 4 tablas existen, el acceso anónimo funciona y RLS bloquea escrituras anónimas en players/matches (error 42501 esperado).
+- La app conecta en vivo sin avisos de error.
+- Cuenta admin creada por el usuario (joseilloortega600@gmail.com); login verificado, pero falta asignar el rol `admin` en app_metadata (UPDATE pendiente en SQL Editor).
+
 ## Backlog priorizado
 
 ### P0 — Completado
